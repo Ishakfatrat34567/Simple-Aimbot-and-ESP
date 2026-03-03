@@ -24,6 +24,7 @@ local aimbotEnabled = false
 local fovRadius     = 120        -- default FOV circle radius (pixels)
 -- 0.97 caps the lerp factor so aim never fully freezes (leaves 3% of motion at max smoothness)
 local SMOOTHNESS_SCALE   = 0.97
+local LEGIT_SMOOTHNESS_PERCENT = 0.70
 local HEALTH_BAR_OFFSET  = 10   -- pixels left of character centre for the health bar
 local LOADING_DURATION   = 5    -- seconds the fake loading screen is shown
 
@@ -325,6 +326,10 @@ local function createTab(name, order)
     btn.TextColor3        = COL_DIM
     btn.LayoutOrder       = order
     btn.Parent            = TabBar
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    btnCorner.Parent = btn
 
     local panel = Instance.new("ScrollingFrame")
     panel.Size               = UDim2.new(1, 0, 1, 0)
@@ -899,7 +904,9 @@ RunService.RenderStepped:Connect(function()
                     if inView then
                         local current  = mousePos
                         local target   = Vector2.new(screenPos.X, screenPos.Y)
-                        local currentSmoothness = legitMode and (smoothness * 0.5) or smoothness
+                        local currentSmoothness = legitMode
+                            and (1 - (LEGIT_SMOOTHNESS_PERCENT * SMOOTHNESS_SCALE))
+                            or smoothness
                         local newPos   = current:Lerp(target, currentSmoothness)
                         -- Move mouse toward target (requires executor mousemoverel)
                         local delta = newPos - current
