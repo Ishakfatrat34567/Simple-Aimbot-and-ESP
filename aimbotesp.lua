@@ -54,21 +54,23 @@ local guiParent = (rawget(_G, "gethui") and gethui()) or game:GetService("CoreGu
 ScreenGui.Parent          = guiParent
 
 -- ── Theme colours ──
-local COL_BG       = Color3.fromRGB(6,   6,   8)
-local COL_PANEL    = Color3.fromRGB(16,  16,  20)
-local COL_ACCENT   = Color3.fromRGB(220, 40,  40)
-local COL_DIM      = Color3.fromRGB(180, 170, 170)
-local COL_TOGON    = Color3.fromRGB(200, 30,  30)
-local COL_TOGOFF   = Color3.fromRGB(45,  45,  50)
-local COL_SLIDER   = Color3.fromRGB(220, 40,  40)
-local COL_BORDER   = Color3.fromRGB(30,  30,  36)
-local COL_TAB_ACTIVE = Color3.fromRGB(28, 28, 34)
+local COL_BG          = Color3.fromRGB(7,   8,   12)
+local COL_PANEL       = Color3.fromRGB(14,  16,  22)
+local COL_PANEL_ALT   = Color3.fromRGB(20,  23,  31)
+local COL_ACCENT      = Color3.fromRGB(226, 51,  69)
+local COL_DIM         = Color3.fromRGB(164, 172, 190)
+local COL_TOGON       = Color3.fromRGB(226, 51,  69)
+local COL_TOGOFF      = Color3.fromRGB(59,  63,  76)
+local COL_SLIDER      = Color3.fromRGB(226, 51,  69)
+local COL_BORDER      = Color3.fromRGB(41,  46,  58)
+local COL_TAB_ACTIVE  = Color3.fromRGB(30,  34,  46)
+local COL_TEXT_MAIN   = Color3.fromRGB(240, 244, 255)
 
 -- ── Main Window ──
 local MainFrame = Instance.new("Frame")
 MainFrame.Name            = "MainFrame"
-MainFrame.Size            = UDim2.new(0, 480, 0, 340)
-MainFrame.Position        = UDim2.new(0.5, -240, 0.5, -170)
+MainFrame.Size            = UDim2.new(0, 640, 0, 400)
+MainFrame.Position        = UDim2.new(0.5, -320, 0.5, -200)
 MainFrame.BackgroundColor3 = COL_BG
 MainFrame.BorderSizePixel = 0
 MainFrame.Active          = true
@@ -77,7 +79,7 @@ MainFrame.Visible         = false    -- hidden until loading screen finishes
 MainFrame.Parent          = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
@@ -88,43 +90,54 @@ MainStroke.Parent = MainFrame
 
 -- Title bar
 local TitleBar = Instance.new("Frame")
-TitleBar.Size              = UDim2.new(1, 0, 0, 36)
+TitleBar.Size              = UDim2.new(1, 0, 0, 52)
 TitleBar.BackgroundColor3  = COL_PANEL
 TitleBar.BorderSizePixel   = 0
 TitleBar.Parent            = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 8)
+TitleCorner.CornerRadius = UDim.new(0, 12)
 TitleCorner.Parent = TitleBar
 
 -- Fill bottom corners of title bar
 local TitleFill = Instance.new("Frame")
-TitleFill.Size             = UDim2.new(1, 0, 0, 10)
-TitleFill.Position         = UDim2.new(0, 0, 1, -10)
+TitleFill.Size             = UDim2.new(1, 0, 0, 14)
+TitleFill.Position         = UDim2.new(0, 0, 1, -14)
 TitleFill.BackgroundColor3 = COL_PANEL
 TitleFill.BorderSizePixel  = 0
 TitleFill.Parent           = TitleBar
 
 local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size              = UDim2.new(1, -40, 1, 0)
-TitleLabel.Position          = UDim2.new(0, 14, 0, 0)
+TitleLabel.Size              = UDim2.new(1, -120, 0, 24)
+TitleLabel.Position          = UDim2.new(0, 16, 0, 8)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text              = "IshKeb Menu"
+TitleLabel.Text              = "IshKeb Control Suite"
 TitleLabel.Font              = Enum.Font.GothamBold
-TitleLabel.TextSize          = 15
-TitleLabel.TextColor3        = COL_ACCENT
+TitleLabel.TextSize          = 17
+TitleLabel.TextColor3        = COL_TEXT_MAIN
 TitleLabel.TextXAlignment    = Enum.TextXAlignment.Left
 TitleLabel.Parent            = TitleBar
+
+local SubtitleLabel = Instance.new("TextLabel")
+SubtitleLabel.Size              = UDim2.new(1, -120, 0, 18)
+SubtitleLabel.Position          = UDim2.new(0, 16, 0, 29)
+SubtitleLabel.BackgroundTransparency = 1
+SubtitleLabel.Text              = "Aimbot + ESP  •  Insert to toggle"
+SubtitleLabel.Font              = Enum.Font.Gotham
+SubtitleLabel.TextSize          = 11
+SubtitleLabel.TextColor3        = COL_DIM
+SubtitleLabel.TextXAlignment    = Enum.TextXAlignment.Left
+SubtitleLabel.Parent            = TitleBar
 
 -- Close button
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size              = UDim2.new(0, 28, 0, 28)
-CloseBtn.Position          = UDim2.new(1, -32, 0, 4)
-CloseBtn.BackgroundColor3  = Color3.fromRGB(200, 50, 50)
+CloseBtn.Position          = UDim2.new(1, -38, 0, 12)
+CloseBtn.BackgroundColor3  = COL_PANEL_ALT
 CloseBtn.Text              = "✕"
 CloseBtn.Font              = Enum.Font.GothamBold
 CloseBtn.TextSize          = 13
-CloseBtn.TextColor3        = Color3.fromRGB(245, 245, 245)
+CloseBtn.TextColor3        = COL_TEXT_MAIN
 CloseBtn.BorderSizePixel   = 0
 CloseBtn.Parent            = TitleBar
 
@@ -138,15 +151,15 @@ end)
 
 -- Keybind hint
 local KeyHint = Instance.new("TextLabel")
-KeyHint.Size                   = UDim2.new(1, 0, 0, 14)
-KeyHint.Position               = UDim2.new(0, 0, 1, -16)
+KeyHint.Size                   = UDim2.new(1, 0, 0, 16)
+KeyHint.Position               = UDim2.new(0, 0, 1, -20)
 KeyHint.BackgroundTransparency = 1
 KeyHint.Text                   = "Press INSERT to toggle menu"
 KeyHint.Font                   = Enum.Font.Gotham
 KeyHint.TextSize               = 11
 KeyHint.TextColor3             = COL_DIM
 KeyHint.TextXAlignment         = Enum.TextXAlignment.Center
-KeyHint.Parent                 = ScreenGui
+KeyHint.Parent                 = MainFrame
 
 -- ──────────────────────────────────────────────────────────────
 --  LOADING SCREEN
@@ -183,8 +196,8 @@ LoadSub.ZIndex                 = 21
 LoadSub.Parent                 = LoadFrame
 
 local ProgressBG = Instance.new("Frame")
-ProgressBG.Size             = UDim2.new(0, 320, 0, 6)
-ProgressBG.Position         = UDim2.new(0.5, -160, 0.58, 0)
+ProgressBG.Size             = UDim2.new(0, 360, 0, 8)
+ProgressBG.Position         = UDim2.new(0.5, -180, 0.58, 0)
 ProgressBG.BackgroundColor3 = COL_TOGOFF
 ProgressBG.BorderSizePixel  = 0
 ProgressBG.ZIndex           = 21
@@ -218,24 +231,69 @@ LoadStatus.ZIndex                 = 21
 LoadStatus.Parent                 = LoadFrame
 
 
+local BodyFrame = Instance.new("Frame")
+BodyFrame.Size             = UDim2.new(1, 0, 1, -52)
+BodyFrame.Position         = UDim2.new(0, 0, 0, 52)
+BodyFrame.BackgroundTransparency = 1
+BodyFrame.Parent           = MainFrame
+
+local Sidebar = Instance.new("Frame")
+Sidebar.Size             = UDim2.new(0, 170, 1, -10)
+Sidebar.Position         = UDim2.new(0, 8, 0, 6)
+Sidebar.BackgroundColor3 = COL_PANEL
+Sidebar.BorderSizePixel  = 0
+Sidebar.Parent           = BodyFrame
+
+local SidebarCorner = Instance.new("UICorner")
+SidebarCorner.CornerRadius = UDim.new(0, 10)
+SidebarCorner.Parent = Sidebar
+
+local SidebarStroke = Instance.new("UIStroke")
+SidebarStroke.Color = COL_BORDER
+SidebarStroke.Transparency = 0.25
+SidebarStroke.Parent = Sidebar
+
+local SidebarHeader = Instance.new("TextLabel")
+SidebarHeader.Size                   = UDim2.new(1, -20, 0, 24)
+SidebarHeader.Position               = UDim2.new(0, 10, 0, 10)
+SidebarHeader.BackgroundTransparency = 1
+SidebarHeader.Text                   = "Modules"
+SidebarHeader.Font                   = Enum.Font.GothamBold
+SidebarHeader.TextSize               = 14
+SidebarHeader.TextColor3             = COL_ACCENT
+SidebarHeader.TextXAlignment         = Enum.TextXAlignment.Left
+SidebarHeader.Parent                 = Sidebar
+
 local TabBar = Instance.new("Frame")
-TabBar.Size             = UDim2.new(1, 0, 0, 32)
-TabBar.Position         = UDim2.new(0, 0, 0, 36)
-TabBar.BackgroundColor3 = COL_PANEL
+TabBar.Size             = UDim2.new(1, -20, 1, -54)
+TabBar.Position         = UDim2.new(0, 10, 0, 40)
+TabBar.BackgroundTransparency = 1
 TabBar.BorderSizePixel  = 0
-TabBar.Parent           = MainFrame
+TabBar.Parent           = Sidebar
 
 local TabList = Instance.new("UIListLayout")
-TabList.FillDirection  = Enum.FillDirection.Horizontal
+TabList.FillDirection  = Enum.FillDirection.Vertical
+TabList.HorizontalAlignment = Enum.HorizontalAlignment.Left
 TabList.SortOrder      = Enum.SortOrder.LayoutOrder
+TabList.Padding        = UDim.new(0, 8)
 TabList.Parent         = TabBar
 
 -- Content area
 local ContentArea = Instance.new("Frame")
-ContentArea.Size             = UDim2.new(1, 0, 1, -68)
-ContentArea.Position         = UDim2.new(0, 0, 0, 68)
-ContentArea.BackgroundTransparency = 1
-ContentArea.Parent           = MainFrame
+ContentArea.Size             = UDim2.new(1, -194, 1, -10)
+ContentArea.Position         = UDim2.new(0, 186, 0, 6)
+ContentArea.BackgroundColor3 = COL_PANEL
+ContentArea.BorderSizePixel  = 0
+ContentArea.Parent           = BodyFrame
+
+local ContentCorner = Instance.new("UICorner")
+ContentCorner.CornerRadius = UDim.new(0, 10)
+ContentCorner.Parent = ContentArea
+
+local ContentStroke = Instance.new("UIStroke")
+ContentStroke.Color = COL_BORDER
+ContentStroke.Transparency = 0.25
+ContentStroke.Parent = ContentArea
 
 -- ──────────────────────────────────────────────────────────────
 --  Helper: create a tab button + its panel
@@ -248,7 +306,7 @@ local function switchTab(name)
     if activeTab then
         tabPanels[activeTab].Visible     = false
         tabButtons[activeTab].TextColor3 = COL_DIM
-        tabButtons[activeTab].BackgroundColor3 = COL_PANEL
+        tabButtons[activeTab].BackgroundColor3 = COL_PANEL_ALT
     end
     activeTab = name
     tabPanels[name].Visible     = true
@@ -258,18 +316,19 @@ end
 
 local function createTab(name, order)
     local btn = Instance.new("TextButton")
-    btn.Size              = UDim2.new(0, 120, 1, 0)
-    btn.BackgroundColor3  = COL_PANEL
+    btn.Size              = UDim2.new(1, 0, 0, 34)
+    btn.BackgroundColor3  = COL_PANEL_ALT
     btn.BorderSizePixel   = 0
     btn.Text              = name
     btn.Font              = Enum.Font.GothamSemibold
-    btn.TextSize          = 13
+    btn.TextSize          = 12
     btn.TextColor3        = COL_DIM
     btn.LayoutOrder       = order
     btn.Parent            = TabBar
 
     local panel = Instance.new("ScrollingFrame")
     panel.Size               = UDim2.new(1, 0, 1, 0)
+    panel.Position           = UDim2.new(0, 0, 0, 0)
     panel.BackgroundTransparency = 1
     panel.BorderSizePixel    = 0
     panel.ScrollBarThickness = 4
@@ -277,16 +336,17 @@ local function createTab(name, order)
     panel.Visible            = false
     panel.Parent             = ContentArea
 
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop    = UDim.new(0, 12)
+    padding.PaddingBottom = UDim.new(0, 8)
+    padding.PaddingLeft   = UDim.new(0, 12)
+    padding.PaddingRight  = UDim.new(0, 12)
+    padding.Parent        = panel
+
     local layout = Instance.new("UIListLayout")
     layout.Padding         = UDim.new(0, 6)
     layout.SortOrder       = Enum.SortOrder.LayoutOrder
     layout.Parent          = panel
-
-    local padding = Instance.new("UIPadding")
-    padding.PaddingTop    = UDim.new(0, 10)
-    padding.PaddingLeft   = UDim.new(0, 14)
-    padding.PaddingRight  = UDim.new(0, 14)
-    padding.Parent        = panel
 
     tabPanels[name]  = panel
     tabButtons[name] = btn
