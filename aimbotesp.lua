@@ -2,6 +2,7 @@
 local Players           = game:GetService("Players")
 local RunService        = game:GetService("RunService")
 local UserInputService  = game:GetService("UserInputService")
+local TweenService      = game:GetService("TweenService")
 local Camera            = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
@@ -12,6 +13,8 @@ local SMOOTHNESS_SCALE   = 0.97
 local LEGIT_SMOOTHNESS_PERCENT = 0.70
 local HEALTH_BAR_OFFSET  = 10   
 local LOADING_DURATION   = 5    
+
+local TOGGLE_TWEEN_INFO = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 local smoothness    = 1 - (0.15 * SMOOTHNESS_SCALE) 
 local function clampLerpAlpha(value)
@@ -460,11 +463,26 @@ local function makeToggle(parent, labelText, order, callback)
     btn.Text                   = ""
     btn.Parent                 = row
 
+    local bgTween
+    local knobTween
+
     local function setState(nextState, fireCallback)
         state = nextState
-        togBG.BackgroundColor3 = state and COL_TOGON or COL_TOGOFF
-        togKnob.Position       = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-        togKnob.BackgroundColor3 = state and COL_BG or COL_ACCENT
+
+        if bgTween then bgTween:Cancel() end
+        if knobTween then knobTween:Cancel() end
+
+        bgTween = TweenService:Create(togBG, TOGGLE_TWEEN_INFO, {
+            BackgroundColor3 = state and COL_TOGON or COL_TOGOFF,
+        })
+        knobTween = TweenService:Create(togKnob, TOGGLE_TWEEN_INFO, {
+            Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8),
+            BackgroundColor3 = state and COL_BG or COL_ACCENT,
+        })
+
+        bgTween:Play()
+        knobTween:Play()
+
         if fireCallback and callback then callback(state) end
     end
 
