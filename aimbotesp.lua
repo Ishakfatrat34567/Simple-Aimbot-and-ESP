@@ -29,6 +29,10 @@ local HEALTH_BAR_OFFSET  = 10   -- pixels left of character centre for the healt
 local LOADING_DURATION   = 5    -- seconds the fake loading screen is shown
 
 local smoothness    = 1 - (0.15 * SMOOTHNESS_SCALE) -- matches slider default 0.15 in inverted formula
+local function clampLerpAlpha(value)
+    return math.clamp(value, 0.05, 0.98)
+end
+
 local lockedTarget  = nil        -- the BasePart we are locked onto
 local visibleOnly   = false
 local aimPartMode   = "Head"
@@ -905,13 +909,21 @@ RunService.RenderStepped:Connect(function()
                         local current  = mousePos
                         local target   = Vector2.new(screenPos.X, screenPos.Y)
                         local currentSmoothness = legitMode
-                            and (1 - (LEGIT_SMOOTHNESS_PERCENT * SMOOTHNESS_SCALE))
-                            or smoothness
+                            and clampLerpAlpha(1 - (LEGIT_SMOOTHNESS_PERCENT * SMOOTHNESS_SCALE))
+                            or clampLerpAlpha(smoothness)
                         local newPos   = current:Lerp(target, currentSmoothness)
                         -- Move mouse toward target (requires executor mousemoverel)
                         local delta = newPos - current
                         if mousemoverel then
-                            mousemoverel(delta.X, delta.Y)
+                            local moveX = math.round(delta.X)
+                            local moveY = math.round(delta.Y)
+                            if moveX == 0 and math.abs(delta.X) >= 0.1 then
+                                moveX = delta.X > 0 and 1 or -1
+                            end
+                            if moveY == 0 and math.abs(delta.Y) >= 0.1 then
+                                moveY = delta.Y > 0 and 1 or -1
+                            end
+                            mousemoverel(moveX, moveY)
                         end
                     end
                 end
@@ -1008,15 +1020,36 @@ task.spawn(function()
         "Prepping ByfronBypass",
         "Done!",
     }
-    local duration = LOADING_DURATION
-    local startTime = tick()
+    local phases = {
+        {target = 0.18, speed = 0.55},
+        {target = 0.30, speed = 0.10, pause = 0.09},
+        {target = 0.58, speed = 0.75},
+        {target = 0.66, speed = 0.18, pause = 0.06},
+        {target = 0.90, speed = 0.85},
+        {target = 1.00, speed = 0.45, pause = 0.12},
+    }
 
-    while tick() - startTime < duration do
-        local t = (tick() - startTime) / duration
-        ProgressFill.Size = UDim2.new(t, 0, 1, 0)
-        local idx = math.clamp(math.floor(t * #messages) + 1, 1, #messages)
-        LoadStatus.Text = messages[idx]
-        task.wait()
+    local fill = 0
+    local totalDuration = LOADING_DURATION
+    local phaseWeight = 0
+    for _, phase in ipairs(phases) do
+        phaseWeight = phaseWeight + ((phase.target - fill) / phase.speed)
+        fill = phase.target
+    end
+    local timeScale = totalDuration / phaseWeight
+
+    fill = 0
+    for _, phase in ipairs(phases) do
+        while fill < phase.target do
+            local dt = RunService.RenderStepped:Wait()
+            fill = math.min(phase.target, fill + (dt / timeScale) * phase.speed)
+            ProgressFill.Size = UDim2.new(fill, 0, 1, 0)
+            local idx = math.clamp(math.floor(fill * #messages) + 1, 1, #messages)
+            LoadStatus.Text = messages[idx]
+        end
+        if phase.pause then
+            task.wait(phase.pause)
+        end
     end
 
     ProgressFill.Size = UDim2.new(1, 0, 1, 0)
