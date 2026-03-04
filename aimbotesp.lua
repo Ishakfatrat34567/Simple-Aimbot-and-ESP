@@ -306,12 +306,12 @@ local activeTab = nil
 local function switchTab(name)
     if activeTab then
         tabPanels[activeTab].Visible     = false
-        tabButtons[activeTab].TextColor3 = COL_DIM
+        tabButtons[activeTab].TextColor3 = Color3.fromRGB(255, 255, 255)
         tabButtons[activeTab].BackgroundColor3 = COL_PANEL_ALT
     end
     activeTab = name
     tabPanels[name].Visible     = true
-    tabButtons[name].TextColor3 = COL_ACCENT
+    tabButtons[name].TextColor3 = Color3.fromRGB(255, 255, 255)
     tabButtons[name].BackgroundColor3 = COL_TAB_ACTIVE
 end
 
@@ -321,9 +321,9 @@ local function createTab(name, order)
     btn.BackgroundColor3  = COL_PANEL_ALT
     btn.BorderSizePixel   = 0
     btn.Text              = name
-    btn.Font              = Enum.Font.GothamSemibold
+    btn.Font              = Enum.Font.GothamBold
     btn.TextSize          = 12
-    btn.TextColor3        = COL_DIM
+    btn.TextColor3        = Color3.fromRGB(255, 255, 255)
     btn.LayoutOrder       = order
     btn.Parent            = TabBar
 
