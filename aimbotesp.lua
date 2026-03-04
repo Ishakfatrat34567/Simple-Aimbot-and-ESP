@@ -1033,7 +1033,7 @@ task.spawn(function()
     local totalDuration = LOADING_DURATION
     local phaseWeight = 0
     for _, phase in ipairs(phases) do
-        phaseWeight += (phase.target - fill) / phase.speed
+        phaseWeight = phaseWeight + ((phase.target - fill) / phase.speed)
         fill = phase.target
     end
     local timeScale = totalDuration / phaseWeight
