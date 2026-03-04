@@ -53,6 +53,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name            = "AimbotESPMenu"
 ScreenGui.ResetOnSpawn    = false
 ScreenGui.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
+ScreenGui.IgnoreGuiInset = true
 -- Use gethui() (Xeno/modern executors) with a CoreGui fallback.
 -- rawget avoids triggering __index metamethods if gethui is not defined.
 local guiParent = (rawget(_G, "gethui") and gethui()) or game:GetService("CoreGui")
