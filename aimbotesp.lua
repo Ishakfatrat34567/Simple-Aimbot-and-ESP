@@ -24,10 +24,15 @@ local aimbotEnabled = false
 local fovRadius     = 120        -- default FOV circle radius (pixels)
 -- 0.97 caps the lerp factor so aim never fully freezes (leaves 3% of motion at max smoothness)
 local SMOOTHNESS_SCALE   = 0.97
+local LEGIT_SMOOTHNESS_PERCENT = 0.70
 local HEALTH_BAR_OFFSET  = 10   -- pixels left of character centre for the health bar
 local LOADING_DURATION   = 5    -- seconds the fake loading screen is shown
 
 local smoothness    = 1 - (0.15 * SMOOTHNESS_SCALE) -- matches slider default 0.15 in inverted formula
+local function clampLerpAlpha(value)
+    return math.clamp(value, 0.05, 0.98)
+end
+
 local lockedTarget  = nil        -- the BasePart we are locked onto
 local visibleOnly   = false
 local aimPartMode   = "Head"
@@ -48,6 +53,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name            = "AimbotESPMenu"
 ScreenGui.ResetOnSpawn    = false
 ScreenGui.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
+ScreenGui.IgnoreGuiInset = true
 -- Use gethui() (Xeno/modern executors) with a CoreGui fallback.
 -- rawget avoids triggering __index metamethods if gethui is not defined.
 local guiParent = (rawget(_G, "gethui") and gethui()) or game:GetService("CoreGui")
@@ -114,7 +120,7 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.Text              = "IshKeb Control Suite"
 TitleLabel.Font              = Enum.Font.GothamBold
 TitleLabel.TextSize          = 17
-TitleLabel.TextColor3        = COL_TEXT_MAIN
+TitleLabel.TextColor3        = Color3.fromRGB(255, 255, 255)
 TitleLabel.TextXAlignment    = Enum.TextXAlignment.Left
 TitleLabel.Parent            = TitleBar
 
@@ -123,9 +129,9 @@ SubtitleLabel.Size              = UDim2.new(1, -120, 0, 18)
 SubtitleLabel.Position          = UDim2.new(0, 16, 0, 29)
 SubtitleLabel.BackgroundTransparency = 1
 SubtitleLabel.Text              = "Aimbot + ESP  •  Insert to toggle"
-SubtitleLabel.Font              = Enum.Font.Gotham
+SubtitleLabel.Font              = Enum.Font.GothamBold
 SubtitleLabel.TextSize          = 11
-SubtitleLabel.TextColor3        = COL_DIM
+SubtitleLabel.TextColor3        = Color3.fromRGB(255, 255, 255)
 SubtitleLabel.TextXAlignment    = Enum.TextXAlignment.Left
 SubtitleLabel.Parent            = TitleBar
 
@@ -137,7 +143,7 @@ CloseBtn.BackgroundColor3  = COL_PANEL_ALT
 CloseBtn.Text              = "✕"
 CloseBtn.Font              = Enum.Font.GothamBold
 CloseBtn.TextSize          = 13
-CloseBtn.TextColor3        = COL_TEXT_MAIN
+CloseBtn.TextColor3        = Color3.fromRGB(255, 255, 255)
 CloseBtn.BorderSizePixel   = 0
 CloseBtn.Parent            = TitleBar
 
@@ -155,9 +161,9 @@ KeyHint.Size                   = UDim2.new(1, 0, 0, 16)
 KeyHint.Position               = UDim2.new(0, 0, 1, -20)
 KeyHint.BackgroundTransparency = 1
 KeyHint.Text                   = "Press INSERT to toggle menu"
-KeyHint.Font                   = Enum.Font.Gotham
+KeyHint.Font                   = Enum.Font.GothamBold
 KeyHint.TextSize               = 11
-KeyHint.TextColor3             = COL_DIM
+KeyHint.TextColor3             = Color3.fromRGB(255, 255, 255)
 KeyHint.TextXAlignment         = Enum.TextXAlignment.Center
 KeyHint.Parent                 = MainFrame
 
@@ -178,7 +184,7 @@ LoadTitle.BackgroundTransparency = 1
 LoadTitle.Text                   = "IshKeb Menu"
 LoadTitle.Font                   = Enum.Font.GothamBold
 LoadTitle.TextSize               = 22
-LoadTitle.TextColor3             = COL_ACCENT
+LoadTitle.TextColor3             = Color3.fromRGB(255, 255, 255)
 LoadTitle.TextXAlignment         = Enum.TextXAlignment.Center
 LoadTitle.ZIndex                 = 21
 LoadTitle.Parent                 = LoadFrame
@@ -188,9 +194,9 @@ LoadSub.Size                   = UDim2.new(1, 0, 0, 22)
 LoadSub.Position               = UDim2.new(0, 0, 0.38, 44)
 LoadSub.BackgroundTransparency = 1
 LoadSub.Text                   = "Developer: IshKeb"
-LoadSub.Font                   = Enum.Font.Gotham
+LoadSub.Font                   = Enum.Font.GothamBold
 LoadSub.TextSize               = 12
-LoadSub.TextColor3             = COL_DIM
+LoadSub.TextColor3             = Color3.fromRGB(255, 255, 255)
 LoadSub.TextXAlignment         = Enum.TextXAlignment.Center
 LoadSub.ZIndex                 = 21
 LoadSub.Parent                 = LoadFrame
@@ -223,9 +229,9 @@ LoadStatus.Size                   = UDim2.new(1, 0, 0, 18)
 LoadStatus.Position               = UDim2.new(0, 0, 0.58, 14)
 LoadStatus.BackgroundTransparency = 1
 LoadStatus.Text                   = "Initializing..."
-LoadStatus.Font                   = Enum.Font.Gotham
+LoadStatus.Font                   = Enum.Font.GothamBold
 LoadStatus.TextSize               = 11
-LoadStatus.TextColor3             = COL_DIM
+LoadStatus.TextColor3             = Color3.fromRGB(255, 255, 255)
 LoadStatus.TextXAlignment         = Enum.TextXAlignment.Center
 LoadStatus.ZIndex                 = 21
 LoadStatus.Parent                 = LoadFrame
@@ -260,7 +266,7 @@ SidebarHeader.BackgroundTransparency = 1
 SidebarHeader.Text                   = "Modules"
 SidebarHeader.Font                   = Enum.Font.GothamBold
 SidebarHeader.TextSize               = 14
-SidebarHeader.TextColor3             = COL_ACCENT
+SidebarHeader.TextColor3             = Color3.fromRGB(255, 255, 255)
 SidebarHeader.TextXAlignment         = Enum.TextXAlignment.Left
 SidebarHeader.Parent                 = Sidebar
 
@@ -305,12 +311,12 @@ local activeTab = nil
 local function switchTab(name)
     if activeTab then
         tabPanels[activeTab].Visible     = false
-        tabButtons[activeTab].TextColor3 = COL_DIM
+        tabButtons[activeTab].TextColor3 = Color3.fromRGB(255, 255, 255)
         tabButtons[activeTab].BackgroundColor3 = COL_PANEL_ALT
     end
     activeTab = name
     tabPanels[name].Visible     = true
-    tabButtons[name].TextColor3 = COL_ACCENT
+    tabButtons[name].TextColor3 = Color3.fromRGB(255, 255, 255)
     tabButtons[name].BackgroundColor3 = COL_TAB_ACTIVE
 end
 
@@ -320,11 +326,15 @@ local function createTab(name, order)
     btn.BackgroundColor3  = COL_PANEL_ALT
     btn.BorderSizePixel   = 0
     btn.Text              = name
-    btn.Font              = Enum.Font.GothamSemibold
+    btn.Font              = Enum.Font.GothamBold
     btn.TextSize          = 12
-    btn.TextColor3        = COL_DIM
+    btn.TextColor3        = Color3.fromRGB(255, 255, 255)
     btn.LayoutOrder       = order
     btn.Parent            = TabBar
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    btnCorner.Parent = btn
 
     local panel = Instance.new("ScrollingFrame")
     panel.Size               = UDim2.new(1, 0, 1, 0)
@@ -371,9 +381,9 @@ local function makeLabel(parent, text, order)
     lbl.Size                   = UDim2.new(1, 0, 0, 18)
     lbl.BackgroundTransparency = 1
     lbl.Text                   = text
-    lbl.Font                   = Enum.Font.Gotham
+    lbl.Font                   = Enum.Font.GothamBold
     lbl.TextSize               = 12
-    lbl.TextColor3             = COL_DIM
+    lbl.TextColor3             = Color3.fromRGB(255, 255, 255)
     lbl.TextXAlignment         = Enum.TextXAlignment.Left
     lbl.LayoutOrder            = order
     lbl.Parent                 = parent
@@ -400,9 +410,9 @@ local function makeToggle(parent, labelText, order, callback)
     lbl.Position               = UDim2.new(0, 10, 0, 0)
     lbl.BackgroundTransparency = 1
     lbl.Text                   = labelText
-    lbl.Font                   = Enum.Font.Gotham
+    lbl.Font                   = Enum.Font.GothamBold
     lbl.TextSize               = 13
-    lbl.TextColor3             = COL_ACCENT
+    lbl.TextColor3             = Color3.fromRGB(255, 255, 255)
     lbl.TextXAlignment         = Enum.TextXAlignment.Left
     lbl.Parent                 = row
 
@@ -474,9 +484,9 @@ local function makeSlider(parent, labelText, order, minVal, maxVal, defaultVal, 
     lbl.Position               = UDim2.new(0, 10, 0, 4)
     lbl.BackgroundTransparency = 1
     lbl.Text                   = labelText
-    lbl.Font                   = Enum.Font.Gotham
+    lbl.Font                   = Enum.Font.GothamBold
     lbl.TextSize               = 13
-    lbl.TextColor3             = COL_ACCENT
+    lbl.TextColor3             = Color3.fromRGB(255, 255, 255)
     lbl.TextXAlignment         = Enum.TextXAlignment.Left
     lbl.Parent                 = row
 
@@ -485,9 +495,9 @@ local function makeSlider(parent, labelText, order, minVal, maxVal, defaultVal, 
     valLabel.Position               = UDim2.new(0.75, 0, 0, 4)
     valLabel.BackgroundTransparency = 1
     valLabel.Text                   = tostring(defaultVal)
-    valLabel.Font                   = Enum.Font.Gotham
+    valLabel.Font                   = Enum.Font.GothamBold
     valLabel.TextSize               = 12
-    valLabel.TextColor3             = COL_DIM
+    valLabel.TextColor3             = Color3.fromRGB(255, 255, 255)
     valLabel.TextXAlignment         = Enum.TextXAlignment.Right
     valLabel.Parent                 = row
 
@@ -644,9 +654,9 @@ local function makeNote(parent, text, order)
     lbl.AutomaticSize          = Enum.AutomaticSize.Y
     lbl.BackgroundTransparency = 1
     lbl.Text                   = text
-    lbl.Font                   = Enum.Font.Gotham
+    lbl.Font                   = Enum.Font.GothamBold
     lbl.TextSize               = 13
-    lbl.TextColor3             = COL_ACCENT
+    lbl.TextColor3             = Color3.fromRGB(255, 255, 255)
     lbl.TextXAlignment         = Enum.TextXAlignment.Left
     lbl.TextWrapped            = true
     lbl.LayoutOrder            = order
@@ -716,7 +726,7 @@ local function setupESPForPlayer(player)
     hl.Parent               = workspace
 
     espObjects[player] = {
-        nameTag   = newDrawing("Text",   {Visible=false, Size=14, Color=Color3.fromRGB(255,255,255), Center=true, Outline=true, Font=0}),
+        nameTag   = newDrawing("Text",   {Visible=false, Size=16, Color=Color3.fromRGB(255,255,255), Center=true, Outline=true, Font=3}),
         healthBG  = newDrawing("Square", {Visible=false, Thickness=0, Color=Color3.fromRGB(0,0,0),   Filled=true}),
         healthBar = newDrawing("Square", {Visible=false, Thickness=0, Color=Color3.fromRGB(0,200,0), Filled=true}),
         highlight = hl,
@@ -899,12 +909,22 @@ RunService.RenderStepped:Connect(function()
                     if inView then
                         local current  = mousePos
                         local target   = Vector2.new(screenPos.X, screenPos.Y)
-                        local currentSmoothness = legitMode and (smoothness * 0.5) or smoothness
+                        local currentSmoothness = legitMode
+                            and clampLerpAlpha(1 - (LEGIT_SMOOTHNESS_PERCENT * SMOOTHNESS_SCALE))
+                            or clampLerpAlpha(smoothness)
                         local newPos   = current:Lerp(target, currentSmoothness)
                         -- Move mouse toward target (requires executor mousemoverel)
                         local delta = newPos - current
                         if mousemoverel then
-                            mousemoverel(delta.X, delta.Y)
+                            local moveX = math.round(delta.X)
+                            local moveY = math.round(delta.Y)
+                            if moveX == 0 and math.abs(delta.X) >= 0.1 then
+                                moveX = delta.X > 0 and 1 or -1
+                            end
+                            if moveY == 0 and math.abs(delta.Y) >= 0.1 then
+                                moveY = delta.Y > 0 and 1 or -1
+                            end
+                            mousemoverel(moveX, moveY)
                         end
                     end
                 end
@@ -1001,15 +1021,36 @@ task.spawn(function()
         "Prepping ByfronBypass",
         "Done!",
     }
-    local duration = LOADING_DURATION
-    local startTime = tick()
+    local phases = {
+        {target = 0.18, speed = 0.55},
+        {target = 0.30, speed = 0.10, pause = 0.09},
+        {target = 0.58, speed = 0.75},
+        {target = 0.66, speed = 0.18, pause = 0.06},
+        {target = 0.90, speed = 0.85},
+        {target = 1.00, speed = 0.45, pause = 0.12},
+    }
 
-    while tick() - startTime < duration do
-        local t = (tick() - startTime) / duration
-        ProgressFill.Size = UDim2.new(t, 0, 1, 0)
-        local idx = math.clamp(math.floor(t * #messages) + 1, 1, #messages)
-        LoadStatus.Text = messages[idx]
-        task.wait()
+    local fill = 0
+    local totalDuration = LOADING_DURATION
+    local phaseWeight = 0
+    for _, phase in ipairs(phases) do
+        phaseWeight = phaseWeight + ((phase.target - fill) / phase.speed)
+        fill = phase.target
+    end
+    local timeScale = totalDuration / phaseWeight
+
+    fill = 0
+    for _, phase in ipairs(phases) do
+        while fill < phase.target do
+            local dt = RunService.RenderStepped:Wait()
+            fill = math.min(phase.target, fill + (dt / timeScale) * phase.speed)
+            ProgressFill.Size = UDim2.new(fill, 0, 1, 0)
+            local idx = math.clamp(math.floor(fill * #messages) + 1, 1, #messages)
+            LoadStatus.Text = messages[idx]
+        end
+        if phase.pause then
+            task.wait(phase.pause)
+        end
     end
 
     ProgressFill.Size = UDim2.new(1, 0, 1, 0)
