@@ -145,6 +145,7 @@ local userBadge = Instance.new("Frame")
 userBadge.Size                   = UDim2.new(0, 230, 0, 44)
 userBadge.Position               = UDim2.new(0, 12, 1, -52)
 userBadge.BackgroundTransparency = 1
+userBadge.ZIndex                 = 8
 userBadge.Parent                 = MainFrame
 
 local userAvatar = Instance.new("ImageLabel")
@@ -152,6 +153,7 @@ userAvatar.Size                   = UDim2.new(0, 36, 0, 36)
 userAvatar.Position               = UDim2.new(0, 0, 0.5, -18)
 userAvatar.BackgroundColor3       = COL_PANEL_ALT
 userAvatar.BorderSizePixel        = 0
+userAvatar.ZIndex                 = 9
 userAvatar.Image                  = thumbReady and thumbContent or ""
 userAvatar.Parent                 = userBadge
 
@@ -169,6 +171,7 @@ local userWelcome = Instance.new("TextLabel")
 userWelcome.Size                   = UDim2.new(1, -46, 1, 0)
 userWelcome.Position               = UDim2.new(0, 46, 0, 0)
 userWelcome.BackgroundTransparency = 1
+userWelcome.ZIndex                 = 9
 userWelcome.Text                   = "Welcome " .. LocalPlayer.Name .. "!"
 userWelcome.Font                   = Enum.Font.GothamBold
 userWelcome.TextSize               = 13
