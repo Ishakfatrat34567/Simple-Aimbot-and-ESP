@@ -1,15 +1,4 @@
--- AimbotESP.lua
--- Developer: IshKeb
--- Note: this script should work for most games.
---
--- EXECUTOR DEPENDENCIES:
---   Drawing        – executor Drawing API (Xeno, Synapse X, KRNL, Script-Ware, etc.)
---   mousemoverel   – executor mouse-movement function (same executors)
---   gethui         – Xeno/most modern executors' protected GUI container (optional fallback)
 
--- ──────────────────────────────────────────────────────────────
---  Services
--- ──────────────────────────────────────────────────────────────
 local Players           = game:GetService("Players")
 local RunService        = game:GetService("RunService")
 local UserInputService  = game:GetService("UserInputService")
@@ -17,23 +6,19 @@ local Camera            = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
 
--- ──────────────────────────────────────────────────────────────
---  State
--- ──────────────────────────────────────────────────────────────
 local aimbotEnabled = false
-local fovRadius     = 120        -- default FOV circle radius (pixels)
--- 0.97 caps the lerp factor so aim never fully freezes (leaves 3% of motion at max smoothness)
+local fovRadius     = 120        
 local SMOOTHNESS_SCALE   = 0.97
 local LEGIT_SMOOTHNESS_PERCENT = 0.70
-local HEALTH_BAR_OFFSET  = 10   -- pixels left of character centre for the health bar
-local LOADING_DURATION   = 5    -- seconds the fake loading screen is shown
+local HEALTH_BAR_OFFSET  = 10   
+local LOADING_DURATION   = 5    
 
-local smoothness    = 1 - (0.15 * SMOOTHNESS_SCALE) -- matches slider default 0.15 in inverted formula
+local smoothness    = 1 - (0.15 * SMOOTHNESS_SCALE) 
 local function clampLerpAlpha(value)
     return math.clamp(value, 0.05, 0.98)
 end
 
-local lockedTarget  = nil        -- the BasePart we are locked onto
+local lockedTarget  = nil        
 local visibleOnly   = false
 local aimPartMode   = "Head"
 local legitMode     = false
@@ -43,23 +28,16 @@ local chamsEnabled  = false
 local nameEnabled   = false
 local healthEnabled = false
 
--- tables holding ESP drawings per player
-local espObjects = {}   -- [player] = { box, name, healthBG, healthBar, chams={} }
+local espObjects = {}   
 
--- ──────────────────────────────────────────────────────────────
---  GUI SETUP
--- ──────────────────────────────────────────────────────────────
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name            = "AimbotESPMenu"
 ScreenGui.ResetOnSpawn    = false
 ScreenGui.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
 ScreenGui.IgnoreGuiInset = true
--- Use gethui() (Xeno/modern executors) with a CoreGui fallback.
--- rawget avoids triggering __index metamethods if gethui is not defined.
 local guiParent = (rawget(_G, "gethui") and gethui()) or game:GetService("CoreGui")
 ScreenGui.Parent          = guiParent
 
--- ── Theme colours ──
 local COL_BG          = Color3.fromRGB(7,   8,   12)
 local COL_PANEL       = Color3.fromRGB(14,  16,  22)
 local COL_PANEL_ALT   = Color3.fromRGB(20,  23,  31)
@@ -72,7 +50,6 @@ local COL_BORDER      = Color3.fromRGB(41,  46,  58)
 local COL_TAB_ACTIVE  = Color3.fromRGB(30,  34,  46)
 local COL_TEXT_MAIN   = Color3.fromRGB(240, 244, 255)
 
--- ── Main Window ──
 local MainFrame = Instance.new("Frame")
 MainFrame.Name            = "MainFrame"
 MainFrame.Size            = UDim2.new(0, 640, 0, 400)
@@ -81,7 +58,7 @@ MainFrame.BackgroundColor3 = COL_BG
 MainFrame.BorderSizePixel = 0
 MainFrame.Active          = true
 MainFrame.Draggable       = true
-MainFrame.Visible         = false    -- hidden until loading screen finishes
+MainFrame.Visible         = false    
 MainFrame.Parent          = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
@@ -94,7 +71,6 @@ MainStroke.Color = COL_BORDER
 MainStroke.Transparency = 0.35
 MainStroke.Parent = MainFrame
 
--- Title bar
 local TitleBar = Instance.new("Frame")
 TitleBar.Size              = UDim2.new(1, 0, 0, 52)
 TitleBar.BackgroundColor3  = COL_PANEL
@@ -105,7 +81,6 @@ local TitleCorner = Instance.new("UICorner")
 TitleCorner.CornerRadius = UDim.new(0, 12)
 TitleCorner.Parent = TitleBar
 
--- Fill bottom corners of title bar
 local TitleFill = Instance.new("Frame")
 TitleFill.Size             = UDim2.new(1, 0, 0, 14)
 TitleFill.Position         = UDim2.new(0, 0, 1, -14)
@@ -117,7 +92,7 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size              = UDim2.new(1, -120, 0, 24)
 TitleLabel.Position          = UDim2.new(0, 16, 0, 8)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text              = "IshKeb Control Suite"
+TitleLabel.Text              = "IshKeb Universal Menu"
 TitleLabel.Font              = Enum.Font.GothamBold
 TitleLabel.TextSize          = 17
 TitleLabel.TextColor3        = Color3.fromRGB(255, 255, 255)
@@ -135,7 +110,6 @@ SubtitleLabel.TextColor3        = Color3.fromRGB(255, 255, 255)
 SubtitleLabel.TextXAlignment    = Enum.TextXAlignment.Left
 SubtitleLabel.Parent            = TitleBar
 
--- Close button
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size              = UDim2.new(0, 28, 0, 28)
 CloseBtn.Position          = UDim2.new(1, -38, 0, 12)
@@ -155,7 +129,6 @@ CloseBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
 end)
 
--- Keybind hint
 local KeyHint = Instance.new("TextLabel")
 KeyHint.Size                   = UDim2.new(1, 0, 0, 16)
 KeyHint.Position               = UDim2.new(0, 0, 1, -20)
@@ -167,9 +140,42 @@ KeyHint.TextColor3             = Color3.fromRGB(255, 255, 255)
 KeyHint.TextXAlignment         = Enum.TextXAlignment.Center
 KeyHint.Parent                 = MainFrame
 
--- ──────────────────────────────────────────────────────────────
---  LOADING SCREEN
--- ──────────────────────────────────────────────────────────────
+local thumbContent, thumbReady = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+local userBadge = Instance.new("Frame")
+userBadge.Size                   = UDim2.new(0, 230, 0, 44)
+userBadge.Position               = UDim2.new(0, 12, 1, -52)
+userBadge.BackgroundTransparency = 1
+userBadge.Parent                 = MainFrame
+
+local userAvatar = Instance.new("ImageLabel")
+userAvatar.Size                   = UDim2.new(0, 36, 0, 36)
+userAvatar.Position               = UDim2.new(0, 0, 0.5, -18)
+userAvatar.BackgroundColor3       = COL_PANEL_ALT
+userAvatar.BorderSizePixel        = 0
+userAvatar.Image                  = thumbReady and thumbContent or ""
+userAvatar.Parent                 = userBadge
+
+local userAvatarCorner = Instance.new("UICorner")
+userAvatarCorner.CornerRadius = UDim.new(1, 0)
+userAvatarCorner.Parent = userAvatar
+
+local userAvatarStroke = Instance.new("UIStroke")
+userAvatarStroke.Thickness = 1
+userAvatarStroke.Color = COL_BORDER
+userAvatarStroke.Transparency = 0.2
+userAvatarStroke.Parent = userAvatar
+
+local userWelcome = Instance.new("TextLabel")
+userWelcome.Size                   = UDim2.new(1, -46, 1, 0)
+userWelcome.Position               = UDim2.new(0, 46, 0, 0)
+userWelcome.BackgroundTransparency = 1
+userWelcome.Text                   = "Welcome " .. LocalPlayer.Name .. "!"
+userWelcome.Font                   = Enum.Font.GothamBold
+userWelcome.TextSize               = 13
+userWelcome.TextColor3             = Color3.fromRGB(255, 255, 255)
+userWelcome.TextXAlignment         = Enum.TextXAlignment.Left
+userWelcome.Parent                 = userBadge
+
 local LoadFrame = Instance.new("Frame")
 LoadFrame.Size             = UDim2.new(1, 0, 1, 0)
 LoadFrame.BackgroundColor3 = COL_BG
@@ -236,7 +242,6 @@ LoadStatus.TextXAlignment         = Enum.TextXAlignment.Center
 LoadStatus.ZIndex                 = 21
 LoadStatus.Parent                 = LoadFrame
 
-
 local BodyFrame = Instance.new("Frame")
 BodyFrame.Size             = UDim2.new(1, 0, 1, -52)
 BodyFrame.Position         = UDim2.new(0, 0, 0, 52)
@@ -284,7 +289,6 @@ TabList.SortOrder      = Enum.SortOrder.LayoutOrder
 TabList.Padding        = UDim.new(0, 8)
 TabList.Parent         = TabBar
 
--- Content area
 local ContentArea = Instance.new("Frame")
 ContentArea.Size             = UDim2.new(1, -194, 1, -10)
 ContentArea.Position         = UDim2.new(0, 186, 0, 6)
@@ -301,9 +305,6 @@ ContentStroke.Color = COL_BORDER
 ContentStroke.Transparency = 0.25
 ContentStroke.Parent = ContentArea
 
--- ──────────────────────────────────────────────────────────────
---  Helper: create a tab button + its panel
--- ──────────────────────────────────────────────────────────────
 local tabPanels = {}
 local tabButtons = {}
 local activeTab = nil
@@ -361,7 +362,6 @@ local function createTab(name, order)
     tabPanels[name]  = panel
     tabButtons[name] = btn
 
-    -- Auto-size ScrollingFrame canvas
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         panel.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
     end)
@@ -373,9 +373,6 @@ local function createTab(name, order)
     return panel
 end
 
--- ──────────────────────────────────────────────────────────────
---  Helper: row label
--- ──────────────────────────────────────────────────────────────
 local function makeLabel(parent, text, order)
     local lbl = Instance.new("TextLabel")
     lbl.Size                   = UDim2.new(1, 0, 0, 18)
@@ -390,9 +387,6 @@ local function makeLabel(parent, text, order)
     return lbl
 end
 
--- ──────────────────────────────────────────────────────────────
---  Helper: toggle row
--- ──────────────────────────────────────────────────────────────
 local function makeToggle(parent, labelText, order, callback)
     local row = Instance.new("Frame")
     row.Size             = UDim2.new(1, 0, 0, 32)
@@ -464,9 +458,6 @@ local function makeToggle(parent, labelText, order, callback)
     }
 end
 
--- ──────────────────────────────────────────────────────────────
---  Helper: slider row  (returns row frame; valueLabel auto-updates)
--- ──────────────────────────────────────────────────────────────
 local function makeSlider(parent, labelText, order, minVal, maxVal, defaultVal, callback)
     local row = Instance.new("Frame")
     row.Size             = UDim2.new(1, 0, 0, 52)
@@ -550,7 +541,6 @@ local function makeSlider(parent, labelText, order, minVal, maxVal, defaultVal, 
         if math.type and math.type(minVal) == "integer" then
             value = math.floor(minVal + t * (maxVal - minVal) + 0.5)
         else
-            -- round to 2 decimal places
             value = math.floor((minVal + t * (maxVal - minVal)) * 100 + 0.5) / 100
         end
         fill.Size     = UDim2.new(t, 0, 1, 0)
@@ -559,7 +549,6 @@ local function makeSlider(parent, labelText, order, minVal, maxVal, defaultVal, 
         if callback then callback(value) end
     end
 
-    -- GuiButton.MouseButton1Down fires with (x: number, y: number) absolute screen coords
     trackBtn.MouseButton1Down:Connect(function(x, _y)
         dragging = true
         updateFromX(x)
@@ -578,15 +567,11 @@ local function makeSlider(parent, labelText, order, minVal, maxVal, defaultVal, 
     return row
 end
 
--- ──────────────────────────────────────────────────────────────
---  Build Tabs
--- ──────────────────────────────────────────────────────────────
 local aimbotPanel  = createTab("Aimbot",  1)
 local visualsPanel = createTab("Visuals", 2)
 local partPanel    = createTab("Part selection", 3)
 local notesPanel   = createTab("Notes",   4)
 
--- ── Aimbot Tab ──
 makeToggle(aimbotPanel, "Enable Aimbot", 1, function(val)
     aimbotEnabled = val
     if not val then lockedTarget = nil end
@@ -596,9 +581,7 @@ makeSlider(aimbotPanel, "FOV Circle Size", 2, 20, 400, fovRadius, function(val)
     fovRadius = val
 end)
 
--- slider default 0.15 → inverted smoothness: high slider = slow lerp = more smooth
 makeSlider(aimbotPanel, "Aim Smoothness", 3, -1.00, 1.00, 0.15, function(val)
-    -- invert: high slider value = high smoothness = smaller lerp factor = slower / smoother aim
     smoothness = 1 - (val * SMOOTHNESS_SCALE)
 end)
 
@@ -614,12 +597,10 @@ end)
 
 makeLabel(aimbotPanel, "Hold M2 (Right-Click) to aim.", 6)
 
--- ── Visuals Tab ──
 makeToggle(visualsPanel, "Name ESP",       1, function(val) nameEnabled   = val end)
 makeToggle(visualsPanel, "Health Bar ESP", 2, function(val) healthEnabled = val end)
 makeToggle(visualsPanel, "Chams ESP",      3, function(val) chamsEnabled  = val end)
 
--- ── Part selection Tab ──
 local partModes = {
     "Head",
     "Torso",
@@ -647,7 +628,6 @@ for idx, modeName in ipairs(partModes) do
 end
 partToggles["Head"].setState(true, true)
 
--- ── Notes Tab ──
 local function makeNote(parent, text, order)
     local lbl = Instance.new("TextLabel")
     lbl.Size                   = UDim2.new(1, 0, 0, 0)
@@ -667,11 +647,7 @@ end
 makeNote(notesPanel, "Developer: IshKeb", 1)
 makeNote(notesPanel, "Note: this script should work for most games.", 2)
 makeNote(notesPanel, "Toggle key is Insert", 3)
--- (switchTab will be called by the loading screen task after setup is complete)
 
--- ──────────────────────────────────────────────────────────────
---  FOV CIRCLE  (Drawing API)
--- ──────────────────────────────────────────────────────────────
 local fovCircle = Drawing.new("Circle")
 fovCircle.Visible   = false
 fovCircle.Thickness = 1.5
@@ -680,9 +656,6 @@ fovCircle.Filled    = false
 fovCircle.NumSides  = 64
 fovCircle.Radius    = fovRadius
 
--- ──────────────────────────────────────────────────────────────
---  ESP HELPERS
--- ──────────────────────────────────────────────────────────────
 local function newDrawing(type_, props)
     local d = Drawing.new(type_)
     for k, v in pairs(props) do d[k] = v end
@@ -692,11 +665,9 @@ end
 local function removeESPForPlayer(player)
     local obj = espObjects[player]
     if not obj then return end
-    -- Remove Drawing objects
     pcall(function() obj.nameTag:Remove() end)
     pcall(function() obj.healthBG:Remove() end)
     pcall(function() obj.healthBar:Remove() end)
-    -- Destroy the Highlight instance
     if obj.highlight then pcall(function() obj.highlight:Destroy() end) end
     espObjects[player] = nil
 end
@@ -710,11 +681,9 @@ local function getCharacterParts(character)
     return root, head, humanoid
 end
 
--- Build ESP drawings for a player
 local function setupESPForPlayer(player)
     if espObjects[player] then return end
 
-    -- Highlight instance for Chams (renders through walls via AlwaysOnTop)
     local hl = Instance.new("Highlight")
     hl.FillColor            = Color3.fromRGB(255, 50, 50)
     hl.OutlineColor         = Color3.fromRGB(255, 255, 255)
@@ -736,18 +705,13 @@ end
 local function applyChams(player)
     local obj = espObjects[player]
     if not obj or not obj.highlight then return end
-    -- Update the Highlight adornee to the player's current character
     obj.highlight.Adornee = player.Character
 end
 
--- ──────────────────────────────────────────────────────────────
---  Register / unregister players
--- ──────────────────────────────────────────────────────────────
 local function onPlayerAdded(player)
     if player == LocalPlayer then return end
     setupESPForPlayer(player)
 
-    -- Watch for character changes (respawns, etc.)
     player.CharacterAdded:Connect(function(character)
         task.wait(0.1)
         local obj = espObjects[player]
@@ -771,9 +735,6 @@ end
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
 
--- ──────────────────────────────────────────────────────────────
---  AIMBOT HELPERS
--- ──────────────────────────────────────────────────────────────
 local function getMousePos()
     return UserInputService:GetMouseLocation()
 end
@@ -860,13 +821,9 @@ local function getClosestTargetPart(radius)
     return bestPart
 end
 
--- ──────────────────────────────────────────────────────────────
---  MAIN RENDER LOOP
--- ──────────────────────────────────────────────────────────────
 local m2Held = false
 
 UserInputService.InputBegan:Connect(function(input, gpe)
-    -- MouseButton2 (right-click): never block on gpe so aimbot fires even when menu is focused
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         m2Held = true
         return
@@ -884,19 +841,16 @@ end)
 RunService.RenderStepped:Connect(function()
     local mousePos = getMousePos()
 
-    -- ── FOV Circle ──
     fovCircle.Visible = aimbotEnabled
     fovCircle.Radius  = fovRadius
     fovCircle.Position = mousePos
 
-    -- ── Aimbot ──
     if aimbotEnabled and m2Held then
         if not lockedTarget then
             lockedTarget = getClosestTargetPart()
         end
 
         if lockedTarget then
-            -- validate target still alive
             local humanoid = lockedTarget.Parent and
                              lockedTarget.Parent:FindFirstChildOfClass("Humanoid")
             if not humanoid or humanoid.Health <= 0 or not lockedTarget.Parent.Parent then
@@ -913,7 +867,6 @@ RunService.RenderStepped:Connect(function()
                             and clampLerpAlpha(1 - (LEGIT_SMOOTHNESS_PERCENT * SMOOTHNESS_SCALE))
                             or clampLerpAlpha(smoothness)
                         local newPos   = current:Lerp(target, currentSmoothness)
-                        -- Move mouse toward target (requires executor mousemoverel)
                         local delta = newPos - current
                         if mousemoverel then
                             local moveX = math.round(delta.X)
@@ -934,7 +887,6 @@ RunService.RenderStepped:Connect(function()
         lockedTarget = nil
     end
 
-    -- ── ESP ──
     for _, player in pairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
 
@@ -946,7 +898,6 @@ RunService.RenderStepped:Connect(function()
 
         local visible = (root ~= nil and head ~= nil)
 
-        -- Name ESP
         if nameEnabled and visible then
             local sp, inView = worldToScreen(head.Position + Vector3.new(0, 0.7, 0))
             obj.nameTag.Visible   = inView
@@ -956,7 +907,6 @@ RunService.RenderStepped:Connect(function()
             obj.nameTag.Visible = false
         end
 
-        -- Health Bar ESP (positions computed from head/root world positions)
         local topSP, topInView
         local botSP, botInView
         if visible then
@@ -990,7 +940,6 @@ RunService.RenderStepped:Connect(function()
             obj.healthBar.Visible = false
         end
 
-        -- Chams ESP via Highlight instance (AlwaysOnTop = visible through walls)
         if obj.highlight then
             obj.highlight.Adornee = character
             obj.highlight.Enabled = chamsEnabled and visible and (character ~= nil)
@@ -998,9 +947,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ──────────────────────────────────────────────────────────────
---  INSERT to toggle menu visibility
--- ──────────────────────────────────────────────────────────────
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.Insert then
@@ -1008,9 +954,6 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
--- ──────────────────────────────────────────────────────────────
---  LOADING SCREEN ANIMATION  (runs after all setup is complete)
--- ──────────────────────────────────────────────────────────────
 task.spawn(function()
     local messages = {
         "Initializing...",
