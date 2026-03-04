@@ -148,9 +148,27 @@ userBadge.BackgroundTransparency = 1
 userBadge.ZIndex                 = 8
 userBadge.Parent                 = MainFrame
 
+local userBadgeBG = Instance.new("Frame")
+userBadgeBG.Size                   = UDim2.new(1, 0, 1, 0)
+userBadgeBG.BackgroundColor3       = COL_PANEL
+userBadgeBG.BackgroundTransparency = 0.18
+userBadgeBG.BorderSizePixel        = 0
+userBadgeBG.ZIndex                 = 8
+userBadgeBG.Parent                 = userBadge
+
+local userBadgeCorner = Instance.new("UICorner")
+userBadgeCorner.CornerRadius = UDim.new(0, 10)
+userBadgeCorner.Parent = userBadgeBG
+
+local userBadgeStroke = Instance.new("UIStroke")
+userBadgeStroke.Thickness = 1
+userBadgeStroke.Color = COL_BORDER
+userBadgeStroke.Transparency = 0.15
+userBadgeStroke.Parent = userBadgeBG
+
 local userAvatar = Instance.new("ImageLabel")
 userAvatar.Size                   = UDim2.new(0, 36, 0, 36)
-userAvatar.Position               = UDim2.new(0, 0, 0.5, -18)
+userAvatar.Position               = UDim2.new(0, 5, 0.5, -18)
 userAvatar.BackgroundColor3       = COL_PANEL_ALT
 userAvatar.BorderSizePixel        = 0
 userAvatar.ZIndex                 = 9
@@ -169,7 +187,7 @@ userAvatarStroke.Parent = userAvatar
 
 local userWelcome = Instance.new("TextLabel")
 userWelcome.Size                   = UDim2.new(1, -46, 1, 0)
-userWelcome.Position               = UDim2.new(0, 46, 0, 0)
+userWelcome.Position               = UDim2.new(0, 50, 0, 0)
 userWelcome.BackgroundTransparency = 1
 userWelcome.ZIndex                 = 9
 userWelcome.Text                   = "Welcome " .. LocalPlayer.Name .. "!"
