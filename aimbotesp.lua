@@ -1037,12 +1037,29 @@ local configNameCorner = Instance.new("UICorner")
 configNameCorner.CornerRadius = UDim.new(0, 6)
 configNameCorner.Parent = configNameBox
 
+local configDropdownFrame = Instance.new("Frame")
+configDropdownFrame.Size = UDim2.new(1, 0, 0, 40)
+configDropdownFrame.BackgroundColor3 = COL_PANEL_ALT
+configDropdownFrame.BorderSizePixel = 0
+configDropdownFrame.LayoutOrder = 3
+configDropdownFrame.Parent = configsPanel
+
+local configDropdownFrameCorner = Instance.new("UICorner")
+configDropdownFrameCorner.CornerRadius = UDim.new(0, 8)
+configDropdownFrameCorner.Parent = configDropdownFrame
+
+local configDropdownFrameStroke = Instance.new("UIStroke")
+configDropdownFrameStroke.Thickness = 1
+configDropdownFrameStroke.Color = COL_BORDER
+configDropdownFrameStroke.Transparency = 0.1
+configDropdownFrameStroke.Parent = configDropdownFrame
+
 local configDropdown = Instance.new("Frame")
-configDropdown.Size = UDim2.new(1, 0, 0, 32)
+configDropdown.Size = UDim2.new(1, -8, 1, -8)
+configDropdown.Position = UDim2.new(0, 4, 0, 4)
 configDropdown.BackgroundColor3 = COL_PANEL
 configDropdown.BorderSizePixel = 0
-configDropdown.LayoutOrder = 3
-configDropdown.Parent = configsPanel
+configDropdown.Parent = configDropdownFrame
 
 local configDropdownCorner = Instance.new("UICorner")
 configDropdownCorner.CornerRadius = UDim.new(0, 6)
@@ -1149,6 +1166,70 @@ local loadConfigCorner = Instance.new("UICorner")
 loadConfigCorner.CornerRadius = UDim.new(0, 6)
 loadConfigCorner.Parent = loadConfigBtn
 
+local deleteLastConfigFrame = Instance.new("Frame")
+deleteLastConfigFrame.Size = UDim2.new(1, 0, 0, 40)
+deleteLastConfigFrame.BackgroundColor3 = COL_PANEL_ALT
+deleteLastConfigFrame.BorderSizePixel = 0
+deleteLastConfigFrame.LayoutOrder = 7
+deleteLastConfigFrame.Parent = configsPanel
+
+local deleteLastConfigFrameCorner = Instance.new("UICorner")
+deleteLastConfigFrameCorner.CornerRadius = UDim.new(0, 8)
+deleteLastConfigFrameCorner.Parent = deleteLastConfigFrame
+
+local deleteLastConfigFrameStroke = Instance.new("UIStroke")
+deleteLastConfigFrameStroke.Thickness = 1
+deleteLastConfigFrameStroke.Color = COL_BORDER
+deleteLastConfigFrameStroke.Transparency = 0.1
+deleteLastConfigFrameStroke.Parent = deleteLastConfigFrame
+
+local deleteLastConfigBtn = Instance.new("TextButton")
+deleteLastConfigBtn.Size = UDim2.new(1, -8, 1, -8)
+deleteLastConfigBtn.Position = UDim2.new(0, 4, 0, 4)
+deleteLastConfigBtn.BackgroundColor3 = COL_PANEL
+deleteLastConfigBtn.BorderSizePixel = 0
+deleteLastConfigBtn.Text = "Delete Last Config"
+deleteLastConfigBtn.Font = Enum.Font.GothamBold
+deleteLastConfigBtn.TextSize = 12
+deleteLastConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+deleteLastConfigBtn.Parent = deleteLastConfigFrame
+
+local deleteLastConfigCorner = Instance.new("UICorner")
+deleteLastConfigCorner.CornerRadius = UDim.new(0, 6)
+deleteLastConfigCorner.Parent = deleteLastConfigBtn
+
+local deleteAllConfigsFrame = Instance.new("Frame")
+deleteAllConfigsFrame.Size = UDim2.new(1, 0, 0, 40)
+deleteAllConfigsFrame.BackgroundColor3 = COL_PANEL_ALT
+deleteAllConfigsFrame.BorderSizePixel = 0
+deleteAllConfigsFrame.LayoutOrder = 8
+deleteAllConfigsFrame.Parent = configsPanel
+
+local deleteAllConfigsFrameCorner = Instance.new("UICorner")
+deleteAllConfigsFrameCorner.CornerRadius = UDim.new(0, 8)
+deleteAllConfigsFrameCorner.Parent = deleteAllConfigsFrame
+
+local deleteAllConfigsFrameStroke = Instance.new("UIStroke")
+deleteAllConfigsFrameStroke.Thickness = 1
+deleteAllConfigsFrameStroke.Color = COL_BORDER
+deleteAllConfigsFrameStroke.Transparency = 0.1
+deleteAllConfigsFrameStroke.Parent = deleteAllConfigsFrame
+
+local deleteAllConfigsBtn = Instance.new("TextButton")
+deleteAllConfigsBtn.Size = UDim2.new(1, -8, 1, -8)
+deleteAllConfigsBtn.Position = UDim2.new(0, 4, 0, 4)
+deleteAllConfigsBtn.BackgroundColor3 = COL_PANEL
+deleteAllConfigsBtn.BorderSizePixel = 0
+deleteAllConfigsBtn.Text = "Delete All Configs"
+deleteAllConfigsBtn.Font = Enum.Font.GothamBold
+deleteAllConfigsBtn.TextSize = 12
+deleteAllConfigsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+deleteAllConfigsBtn.Parent = deleteAllConfigsFrame
+
+local deleteAllConfigsCorner = Instance.new("UICorner")
+deleteAllConfigsCorner.CornerRadius = UDim.new(0, 6)
+deleteAllConfigsCorner.Parent = deleteAllConfigsBtn
+
 local function getConfigSnapshot()
     return {
         aimbotEnabled = aimbotEnabled,
@@ -1197,6 +1278,15 @@ local function applyConfig(config)
     end
 end
 
+local function getSortedConfigNames()
+    local names = {}
+    for name, _ in pairs(savedConfigs) do
+        table.insert(names, name)
+    end
+    table.sort(names)
+    return names
+end
+
 local function rebuildConfigList()
     for _, child in ipairs(configListFrame:GetChildren()) do
         if child:IsA("TextButton") then
@@ -1204,11 +1294,7 @@ local function rebuildConfigList()
         end
     end
 
-    local names = {}
-    for name, _ in pairs(savedConfigs) do
-        table.insert(names, name)
-    end
-    table.sort(names)
+    local names = getSortedConfigNames()
 
     if #names == 0 then
         selectedConfigName = nil
@@ -1266,6 +1352,25 @@ end)
 loadConfigBtn.MouseButton1Click:Connect(function()
     if not selectedConfigName then return end
     applyConfig(savedConfigs[selectedConfigName])
+end)
+
+deleteLastConfigBtn.MouseButton1Click:Connect(function()
+    local names = getSortedConfigNames()
+    local lastName = names[#names]
+    if not lastName then return end
+    savedConfigs[lastName] = nil
+    if selectedConfigName == lastName then
+        selectedConfigName = nil
+    end
+    saveConfigsToDisk()
+    rebuildConfigList()
+end)
+
+deleteAllConfigsBtn.MouseButton1Click:Connect(function()
+    savedConfigs = {}
+    selectedConfigName = nil
+    saveConfigsToDisk()
+    rebuildConfigList()
 end)
 
 loadConfigsFromDisk()
