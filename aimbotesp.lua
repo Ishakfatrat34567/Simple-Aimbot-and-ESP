@@ -200,7 +200,7 @@ local LoadTitle = Instance.new("TextLabel")
 LoadTitle.Size                   = UDim2.new(1, 0, 0, 40)
 LoadTitle.Position               = UDim2.new(0, 0, 0.38, 0)
 LoadTitle.BackgroundTransparency = 1
-LoadTitle.Text                   = "IshKeb Menu"
+LoadTitle.Text                   = "Installing Modules..."
 LoadTitle.Font                   = Enum.Font.GothamBold
 LoadTitle.TextSize               = 22
 LoadTitle.TextColor3             = Color3.fromRGB(255, 255, 255)
@@ -212,7 +212,7 @@ local LoadSub = Instance.new("TextLabel")
 LoadSub.Size                   = UDim2.new(1, 0, 0, 22)
 LoadSub.Position               = UDim2.new(0, 0, 0.38, 44)
 LoadSub.BackgroundTransparency = 1
-LoadSub.Text                   = "Developer: IshKeb"
+LoadSub.Text                   = ""
 LoadSub.Font                   = Enum.Font.GothamBold
 LoadSub.TextSize               = 12
 LoadSub.TextColor3             = Color3.fromRGB(255, 255, 255)
@@ -247,7 +247,7 @@ local LoadStatus = Instance.new("TextLabel")
 LoadStatus.Size                   = UDim2.new(1, 0, 0, 18)
 LoadStatus.Position               = UDim2.new(0, 0, 0.58, 14)
 LoadStatus.BackgroundTransparency = 1
-LoadStatus.Text                   = "Initializing..."
+LoadStatus.Text                   = "Installing Modules..."
 LoadStatus.Font                   = Enum.Font.GothamBold
 LoadStatus.TextSize               = 11
 LoadStatus.TextColor3             = Color3.fromRGB(255, 255, 255)
@@ -1263,16 +1263,29 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
+local funFacts = {
+    "Bananas are berries, but strawberries are not.",
+    "Octopuses have three hearts.",
+    "A day on Venus is longer than a year on Venus.",
+    "Honey never spoils if sealed properly.",
+    "Wombat poop is cube-shaped.",
+    "Sharks existed before trees.",
+    "Some turtles can breathe through their butts.",
+    "The Eiffel Tower can grow taller in summer heat.",
+    "There are more possible chess games than atoms in the observable universe.",
+    "Koalas have fingerprints very similar to humans.",
+}
+
+local function pickRandomFunFact()
+    return funFacts[math.random(1, #funFacts)]
+end
+
 task.spawn(function()
-    local messages = {
-        "Initializing...",
-        "Loading modules...",
-        "Esp Modules Installed...",
-        "Workspace injection complete...",
-        "Almost ready...",
-        "Prepping ByfronBypass",
-        "Done!",
-    }
+    math.randomseed(tick() * 1000 + LocalPlayer.UserId)
+    LoadTitle.Text = "Installing Modules..."
+    LoadStatus.Text = "Installing Modules..."
+    LoadSub.Text = "Fun fact: " .. pickRandomFunFact()
+
     local phases = {
         {target = 0.18, speed = 0.55},
         {target = 0.30, speed = 0.10, pause = 0.09},
@@ -1297,16 +1310,16 @@ task.spawn(function()
             local dt = RunService.RenderStepped:Wait()
             fill = math.min(phase.target, fill + (dt / timeScale) * phase.speed)
             ProgressFill.Size = UDim2.new(fill, 0, 1, 0)
-            local idx = math.clamp(math.floor(fill * #messages) + 1, 1, #messages)
-            LoadStatus.Text = messages[idx]
+            LoadStatus.Text = "Installing Modules..."
         end
         if phase.pause then
+            LoadSub.Text = "Fun fact: " .. pickRandomFunFact()
             task.wait(phase.pause)
         end
     end
 
     ProgressFill.Size = UDim2.new(1, 0, 1, 0)
-    LoadStatus.Text = "Done!"
+    LoadStatus.Text = "Installing Modules..."
     task.wait(0.35)
 
     LoadFrame:Destroy()
