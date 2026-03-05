@@ -39,6 +39,14 @@ local tracersEnabled = false
 local espObjects = {}   
 local spectatingPlayer = nil
 
+local function getPlayerDisplayName(player)
+    return (player and (player.DisplayName or player.Name)) or "Unknown"
+end
+
+local function getCurrentCamera()
+    return workspace.CurrentCamera
+end
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name            = "AimbotESPMenu"
 ScreenGui.ResetOnSpawn    = false
@@ -982,9 +990,10 @@ local function stopSpectating()
     spectatingPlayer = nil
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        Camera.CameraType = Enum.CameraType.Custom
-        Camera.CameraSubject = hum
+    local cam = getCurrentCamera()
+    if hum and cam then
+        cam.CameraType = Enum.CameraType.Custom
+        cam.CameraSubject = hum
     end
     spectateStatus.Text = "Not spectating"
 end
@@ -997,10 +1006,15 @@ local function spectatePlayer(player)
         task.spawn(showCustomNotification, "Player is not ready to spectate.", 5)
         return
     end
+    local cam = getCurrentCamera()
+    if not cam then
+        task.spawn(showCustomNotification, "Camera is not ready yet.", 5)
+        return
+    end
     spectatingPlayer = player
-    Camera.CameraType = Enum.CameraType.Custom
-    Camera.CameraSubject = humanoid
-    spectateStatus.Text = "Spectating: " .. player.DisplayName
+    cam.CameraType = Enum.CameraType.Custom
+    cam.CameraSubject = humanoid
+    spectateStatus.Text = "Spectating: " .. getPlayerDisplayName(player)
 end
 
 local function rebuildSpectateList()
@@ -1018,7 +1032,7 @@ local function rebuildSpectateList()
     end
 
     table.sort(candidates, function(a, b)
-        return string.lower(a.DisplayName) < string.lower(b.DisplayName)
+        return string.lower(getPlayerDisplayName(a)) < string.lower(getPlayerDisplayName(b))
     end)
 
     for idx, player in ipairs(candidates) do
@@ -1028,7 +1042,7 @@ local function rebuildSpectateList()
         row.BackgroundColor3 = COL_PANEL_ALT
         row.BorderSizePixel = 0
         row.LayoutOrder = idx
-        row.Text = player.DisplayName
+        row.Text = getPlayerDisplayName(player)
         row.Font = Enum.Font.GothamBold
         row.TextSize = 12
         row.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1809,9 +1823,10 @@ RunService.RenderStepped:Connect(function()
     if spectatingPlayer then
         local character = spectatingPlayer.Character
         local hum = character and character:FindFirstChildOfClass("Humanoid")
-        if hum and hum.Health > 0 then
-            Camera.CameraType = Enum.CameraType.Custom
-            Camera.CameraSubject = hum
+        local cam = getCurrentCamera()
+        if hum and hum.Health > 0 and cam then
+            cam.CameraType = Enum.CameraType.Custom
+            cam.CameraSubject = hum
         else
             stopSpectating()
         end
