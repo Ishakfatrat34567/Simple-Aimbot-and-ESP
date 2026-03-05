@@ -30,6 +30,8 @@ local espEnabled    = false
 local chamsEnabled  = false
 local nameEnabled   = false
 local healthEnabled = false
+local skeletonEnabled = false
+local tracersEnabled = false
 
 local espObjects = {}   
 
@@ -52,6 +54,9 @@ local COL_SLIDER      = Color3.fromRGB(226, 51,  69)
 local COL_BORDER      = Color3.fromRGB(41,  46,  58)
 local COL_TAB_ACTIVE  = Color3.fromRGB(30,  34,  46)
 local COL_TEXT_MAIN   = Color3.fromRGB(240, 244, 255)
+
+local fovColor = COL_ACCENT
+local espColor = Color3.fromRGB(255, 255, 255)
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name            = "MainFrame"
@@ -606,6 +611,70 @@ local function makeSlider(parent, labelText, order, minVal, maxVal, defaultVal, 
     return row
 end
 
+local function makeColorPicker(parent, title, order, onColor)
+    local row = Instance.new("Frame")
+    row.Size             = UDim2.new(1, 0, 0, 58)
+    row.BackgroundColor3 = COL_PANEL
+    row.BorderSizePixel  = 0
+    row.LayoutOrder      = order
+    row.Parent           = parent
+
+    local rowCorner = Instance.new("UICorner")
+    rowCorner.CornerRadius = UDim.new(0, 6)
+    rowCorner.Parent = row
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size                   = UDim2.new(1, -10, 0, 20)
+    lbl.Position               = UDim2.new(0, 10, 0, 2)
+    lbl.BackgroundTransparency = 1
+    lbl.Text                   = title
+    lbl.Font                   = Enum.Font.GothamBold
+    lbl.TextSize               = 12
+    lbl.TextColor3             = Color3.fromRGB(255, 255, 255)
+    lbl.TextXAlignment         = Enum.TextXAlignment.Left
+    lbl.Parent                 = row
+
+    local colors = {
+        Color3.fromRGB(226, 51, 69),
+        Color3.fromRGB(255, 255, 255),
+        Color3.fromRGB(70, 170, 255),
+        Color3.fromRGB(110, 255, 160),
+        Color3.fromRGB(255, 222, 89),
+        Color3.fromRGB(196, 140, 255),
+        Color3.fromRGB(255, 145, 77),
+        Color3.fromRGB(255, 95, 145),
+    }
+
+    local xOffset = 10
+    for _, color in ipairs(colors) do
+        local colorBtn = Instance.new("TextButton")
+        colorBtn.Size             = UDim2.new(0, 18, 0, 18)
+        colorBtn.Position         = UDim2.new(0, xOffset, 0, 30)
+        colorBtn.BackgroundColor3 = color
+        colorBtn.BorderSizePixel  = 0
+        colorBtn.Text             = ""
+        colorBtn.Parent           = row
+
+        local colorCorner = Instance.new("UICorner")
+        colorCorner.CornerRadius = UDim.new(1, 0)
+        colorCorner.Parent = colorBtn
+
+        local colorStroke = Instance.new("UIStroke")
+        colorStroke.Thickness = 1
+        colorStroke.Color = Color3.fromRGB(255, 255, 255)
+        colorStroke.Transparency = 0.2
+        colorStroke.Parent = colorBtn
+
+        colorBtn.MouseButton1Click:Connect(function()
+            onColor(color)
+        end)
+
+        xOffset = xOffset + 24
+    end
+
+    return row
+end
+
 local aimbotPanel  = createTab("Aimbot",  1)
 local visualsPanel = createTab("Visuals", 2)
 local partPanel    = createTab("Part selection", 3)
@@ -635,10 +704,18 @@ makeToggle(aimbotPanel, "Legit mode", 5, function(val)
 end)
 
 makeLabel(aimbotPanel, "Hold M2 (Right-Click) to aim.", 6)
+makeColorPicker(aimbotPanel, "FOV Circle Color", 98, function(color)
+    fovColor = color
+end)
 
 makeToggle(visualsPanel, "Name ESP",       1, function(val) nameEnabled   = val end)
 makeToggle(visualsPanel, "Health Bar ESP", 2, function(val) healthEnabled = val end)
 makeToggle(visualsPanel, "Chams ESP",      3, function(val) chamsEnabled  = val end)
+makeToggle(visualsPanel, "Skeleton ESP",   4, function(val) skeletonEnabled = val end)
+makeToggle(visualsPanel, "Tracers ESP",    5, function(val) tracersEnabled = val end)
+makeColorPicker(visualsPanel, "ESP Color", 98, function(color)
+    espColor = color
+end)
 
 local partModes = {
     "Head",
@@ -690,7 +767,7 @@ makeNote(notesPanel, "Toggle key is Insert", 3)
 local fovCircle = Drawing.new("Circle")
 fovCircle.Visible   = false
 fovCircle.Thickness = 1.5
-fovCircle.Color     = COL_ACCENT
+fovCircle.Color     = fovColor
 fovCircle.Filled    = false
 fovCircle.NumSides  = 64
 fovCircle.Radius    = fovRadius
@@ -707,6 +784,12 @@ local function removeESPForPlayer(player)
     pcall(function() obj.nameTag:Remove() end)
     pcall(function() obj.healthBG:Remove() end)
     pcall(function() obj.healthBar:Remove() end)
+    pcall(function() obj.tracer:Remove() end)
+    if obj.skeletonLines then
+        for _, line in ipairs(obj.skeletonLines) do
+            pcall(function() line:Remove() end)
+        end
+    end
     if obj.highlight then pcall(function() obj.highlight:Destroy() end) end
     espObjects[player] = nil
 end
@@ -737,6 +820,17 @@ local function setupESPForPlayer(player)
         nameTag   = newDrawing("Text",   {Visible=false, Size=16, Color=Color3.fromRGB(255,255,255), Center=true, Outline=true, Font=3}),
         healthBG  = newDrawing("Square", {Visible=false, Thickness=0, Color=Color3.fromRGB(0,0,0),   Filled=true}),
         healthBar = newDrawing("Square", {Visible=false, Thickness=0, Color=Color3.fromRGB(0,200,0), Filled=true}),
+        tracer    = newDrawing("Line",   {Visible=false, Thickness=1.5, Color=espColor}),
+        skeletonLines = {
+            newDrawing("Line", {Visible=false, Thickness=1.5, Color=espColor}),
+            newDrawing("Line", {Visible=false, Thickness=1.5, Color=espColor}),
+            newDrawing("Line", {Visible=false, Thickness=1.5, Color=espColor}),
+            newDrawing("Line", {Visible=false, Thickness=1.5, Color=espColor}),
+            newDrawing("Line", {Visible=false, Thickness=1.5, Color=espColor}),
+            newDrawing("Line", {Visible=false, Thickness=1.5, Color=espColor}),
+            newDrawing("Line", {Visible=false, Thickness=1.5, Color=espColor}),
+            newDrawing("Line", {Visible=false, Thickness=1.5, Color=espColor}),
+        },
         highlight = hl,
     }
 end
@@ -830,6 +924,39 @@ local function getCharacterTargetParts(character, mode)
     return closestParts
 end
 
+local function getPart(character, names)
+    for _, name in ipairs(names) do
+        local part = character:FindFirstChild(name)
+        if part and part:IsA("BasePart") then
+            return part
+        end
+    end
+    return nil
+end
+
+local function getSkeletonSegments(character)
+    local head = getPart(character, {"Head"})
+    local neck = getPart(character, {"UpperTorso", "Torso"})
+    local root = getPart(character, {"HumanoidRootPart", "LowerTorso", "Torso"})
+    local lArm = getPart(character, {"LeftHand", "LeftLowerArm", "LeftUpperArm", "Left Arm"})
+    local rArm = getPart(character, {"RightHand", "RightLowerArm", "RightUpperArm", "Right Arm"})
+    local lLeg = getPart(character, {"LeftFoot", "LeftLowerLeg", "LeftUpperLeg", "Left Leg"})
+    local rLeg = getPart(character, {"RightFoot", "RightLowerLeg", "RightUpperLeg", "Right Leg"})
+
+    if not (head and neck and root) then
+        return nil
+    end
+
+    return {
+        {head, neck},
+        {neck, root},
+        {neck, lArm},
+        {neck, rArm},
+        {root, lLeg},
+        {root, rLeg},
+    }
+end
+
 local function getClosestTargetPart(radius)
     local mousePos  = getMousePos()
     local bestDist  = math.huge
@@ -883,6 +1010,7 @@ RunService.RenderStepped:Connect(function()
     fovCircle.Visible = aimbotEnabled
     fovCircle.Radius  = fovRadius
     fovCircle.Position = mousePos
+    fovCircle.Color = fovColor
 
     if aimbotEnabled and m2Held then
         if not lockedTarget then
@@ -942,6 +1070,7 @@ RunService.RenderStepped:Connect(function()
             obj.nameTag.Visible   = inView
             obj.nameTag.Position  = sp
             obj.nameTag.Text      = player.Name
+            obj.nameTag.Color     = espColor
         else
             obj.nameTag.Visible = false
         end
@@ -956,11 +1085,12 @@ RunService.RenderStepped:Connect(function()
         local barVisible = visible and topInView and botInView
         if barVisible and healthEnabled then
             local height = math.abs(topSP.Y - botSP.Y)
+            local width  = math.max(24, height * 0.6)
             local hp    = humanoid.Health
             local maxHp = humanoid.MaxHealth
             local ratio = maxHp > 0 and math.clamp(hp / maxHp, 0, 1) or 0
             local barW  = 4
-            local bx    = topSP.X - HEALTH_BAR_OFFSET
+            local bx    = (topSP.X - (width * 0.5)) - HEALTH_BAR_OFFSET
             local by    = topSP.Y
 
             obj.healthBG.Visible  = true
@@ -979,8 +1109,52 @@ RunService.RenderStepped:Connect(function()
             obj.healthBar.Visible = false
         end
 
+        if obj.tracer then
+            if tracersEnabled and visible then
+                local tracerOrigin = Vector2.new(Camera.ViewportSize.X * 0.5, Camera.ViewportSize.Y - 2)
+                obj.tracer.Visible = true
+                obj.tracer.From = tracerOrigin
+                local rootSp, rootIn = worldToScreen(root.Position)
+                obj.tracer.Visible = rootIn
+                obj.tracer.To = rootSp
+                obj.tracer.Color = espColor
+            else
+                obj.tracer.Visible = false
+            end
+        end
+
+        if obj.skeletonLines then
+            if skeletonEnabled and visible then
+                local segments = getSkeletonSegments(character)
+                if segments then
+                    for i, line in ipairs(obj.skeletonLines) do
+                        local seg = segments[i]
+                        if seg and seg[1] and seg[2] then
+                            local a, aIn = worldToScreen(seg[1].Position)
+                            local b, bIn = worldToScreen(seg[2].Position)
+                            line.Visible = aIn and bIn
+                            line.From = a
+                            line.To = b
+                            line.Color = espColor
+                        else
+                            line.Visible = false
+                        end
+                    end
+                else
+                    for _, line in ipairs(obj.skeletonLines) do
+                        line.Visible = false
+                    end
+                end
+            else
+                for _, line in ipairs(obj.skeletonLines) do
+                    line.Visible = false
+                end
+            end
+        end
+
         if obj.highlight then
             obj.highlight.Adornee = character
+            obj.highlight.FillColor = espColor
             obj.highlight.Enabled = chamsEnabled and visible and (character ~= nil)
         end
     end
