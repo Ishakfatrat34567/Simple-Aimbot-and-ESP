@@ -133,7 +133,7 @@ KeyHint.TextXAlignment         = Enum.TextXAlignment.Center
 KeyHint.Parent                 = MainFrame
 
 local firstCloseNotificationShown = false
-local function showFirstCloseNotification()
+local function showCustomNotification(message, visibleDuration)
     local notify = Instance.new("Frame")
     notify.Size = UDim2.new(0, 290, 0, 58)
     notify.AnchorPoint = Vector2.new(1, 1)
@@ -168,7 +168,7 @@ local function showFirstCloseNotification()
     notifyText.Size = UDim2.new(1, -20, 1, 0)
     notifyText.Position = UDim2.new(0, 14, 0, 0)
     notifyText.BackgroundTransparency = 1
-    notifyText.Text = "Press Insert to open the menu!"
+    notifyText.Text = message
     notifyText.Font = Enum.Font.GothamBold
     notifyText.TextSize = 14
     notifyText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -185,10 +185,14 @@ local function showFirstCloseNotification()
 
     tweenIn:Play()
     tweenIn.Completed:Wait()
-    task.wait(5)
+    task.wait(visibleDuration or 5)
     tweenOut:Play()
     tweenOut.Completed:Wait()
     notify:Destroy()
+end
+
+local function showFirstCloseNotification()
+    showCustomNotification("Press Insert to open the menu!", 5)
 end
 
 local LoadFrame = Instance.new("Frame")
@@ -1332,7 +1336,10 @@ local function rebuildConfigList()
 end
 
 configDropdownButton.MouseButton1Click:Connect(function()
-    if next(savedConfigs) == nil then return end
+    if next(savedConfigs) == nil then
+        task.spawn(showCustomNotification, "No configs detected, Make one to open.", 5)
+        return
+    end
     configListFrame.Visible = not configListFrame.Visible
     rebuildConfigList()
 end)
