@@ -153,20 +153,9 @@ local function showCustomNotification(message, visibleDuration)
     notifyStroke.Transparency = 0.1
     notifyStroke.Parent = notify
 
-    local notifyAccent = Instance.new("Frame")
-    notifyAccent.Size = UDim2.new(0, 4, 1, 0)
-    notifyAccent.BackgroundColor3 = COL_ACCENT
-    notifyAccent.BorderSizePixel = 0
-    notifyAccent.ZIndex = 41
-    notifyAccent.Parent = notify
-
-    local notifyAccentCorner = Instance.new("UICorner")
-    notifyAccentCorner.CornerRadius = UDim.new(0, 10)
-    notifyAccentCorner.Parent = notifyAccent
-
     local notifyText = Instance.new("TextLabel")
     notifyText.Size = UDim2.new(1, -20, 1, 0)
-    notifyText.Position = UDim2.new(0, 14, 0, 0)
+    notifyText.Position = UDim2.new(0, 10, 0, 0)
     notifyText.BackgroundTransparency = 1
     notifyText.Text = message
     notifyText.Font = Enum.Font.GothamBold
@@ -928,14 +917,6 @@ makeNote(notesPanel, "Toggle key is Insert", 3)
 local savedConfigs = {}
 local selectedConfigName = nil
 
-local function countSavedConfigs()
-    local total = 0
-    for _ in pairs(savedConfigs) do
-        total = total + 1
-    end
-    return total
-end
-
 local CONFIGS_FILE = "IshKeb_Configs.json"
 local function colorToTable(c)
     return {r = c.R, g = c.G, b = c.B}
@@ -1023,19 +1004,36 @@ end
 
 makeLabel(configsPanel, "Configs", 1)
 
+local configNameFrame = Instance.new("Frame")
+configNameFrame.Size = UDim2.new(1, 0, 0, 40)
+configNameFrame.BackgroundColor3 = COL_PANEL_ALT
+configNameFrame.BorderSizePixel = 0
+configNameFrame.LayoutOrder = 2
+configNameFrame.Parent = configsPanel
+
+local configNameFrameCorner = Instance.new("UICorner")
+configNameFrameCorner.CornerRadius = UDim.new(0, 8)
+configNameFrameCorner.Parent = configNameFrame
+
+local configNameFrameStroke = Instance.new("UIStroke")
+configNameFrameStroke.Thickness = 1
+configNameFrameStroke.Color = COL_BORDER
+configNameFrameStroke.Transparency = 0.1
+configNameFrameStroke.Parent = configNameFrame
+
 local configNameBox = Instance.new("TextBox")
-configNameBox.Size = UDim2.new(1, 0, 0, 32)
+configNameBox.Size = UDim2.new(1, -8, 1, -8)
+configNameBox.Position = UDim2.new(0, 4, 0, 4)
 configNameBox.BackgroundColor3 = COL_PANEL
 configNameBox.BorderSizePixel = 0
-configNameBox.LayoutOrder = 2
-configNameBox.PlaceholderText = "Config name (optional)"
+configNameBox.PlaceholderText = "Config name (required)"
 configNameBox.Text = ""
 configNameBox.ClearTextOnFocus = false
 configNameBox.Font = Enum.Font.GothamBold
 configNameBox.TextSize = 12
 configNameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 configNameBox.PlaceholderColor3 = COL_DIM
-configNameBox.Parent = configsPanel
+configNameBox.Parent = configNameFrame
 
 local configNameCorner = Instance.new("UICorner")
 configNameCorner.CornerRadius = UDim.new(0, 6)
@@ -1347,7 +1345,8 @@ end)
 saveConfigBtn.MouseButton1Click:Connect(function()
     local name = string.gsub(configNameBox.Text, "^%s*(.-)%s*$", "%1")
     if name == "" then
-        name = "Config " .. tostring(countSavedConfigs() + 1)
+        task.spawn(showCustomNotification, "Config name is required.", 5)
+        return
     end
     savedConfigs[name] = getConfigSnapshot()
     selectedConfigName = name
