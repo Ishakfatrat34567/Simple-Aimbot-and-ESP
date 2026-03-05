@@ -3,6 +3,7 @@ local Players           = game:GetService("Players")
 local RunService        = game:GetService("RunService")
 local UserInputService  = game:GetService("UserInputService")
 local TweenService      = game:GetService("TweenService")
+local StatsService      = game:GetService("Stats")
 local Camera            = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
@@ -147,63 +148,6 @@ KeyHint.TextSize               = 11
 KeyHint.TextColor3             = Color3.fromRGB(255, 255, 255)
 KeyHint.TextXAlignment         = Enum.TextXAlignment.Center
 KeyHint.Parent                 = MainFrame
-
-local thumbContent, thumbReady = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
-local userBadge = Instance.new("Frame")
-userBadge.Size                   = UDim2.new(0, 230, 0, 44)
-userBadge.Position               = UDim2.new(0.5, -115, 1, -52)
-userBadge.BackgroundTransparency = 1
-userBadge.ZIndex                 = 8
-userBadge.Parent                 = MainFrame
-
-local userBadgeBG = Instance.new("Frame")
-userBadgeBG.Size                   = UDim2.new(1, 0, 1, 0)
-userBadgeBG.BackgroundColor3       = COL_PANEL
-userBadgeBG.BackgroundTransparency = 0.18
-userBadgeBG.BorderSizePixel        = 0
-userBadgeBG.ZIndex                 = 8
-userBadgeBG.Parent                 = userBadge
-
-local userBadgeCorner = Instance.new("UICorner")
-userBadgeCorner.CornerRadius = UDim.new(0, 10)
-userBadgeCorner.Parent = userBadgeBG
-
-local userBadgeStroke = Instance.new("UIStroke")
-userBadgeStroke.Thickness = 1
-userBadgeStroke.Color = COL_BORDER
-userBadgeStroke.Transparency = 0.15
-userBadgeStroke.Parent = userBadgeBG
-
-local userAvatar = Instance.new("ImageLabel")
-userAvatar.Size                   = UDim2.new(0, 36, 0, 36)
-userAvatar.Position               = UDim2.new(0, 5, 0.5, -18)
-userAvatar.BackgroundColor3       = COL_PANEL_ALT
-userAvatar.BorderSizePixel        = 0
-userAvatar.ZIndex                 = 9
-userAvatar.Image                  = thumbReady and thumbContent or ""
-userAvatar.Parent                 = userBadge
-
-local userAvatarCorner = Instance.new("UICorner")
-userAvatarCorner.CornerRadius = UDim.new(1, 0)
-userAvatarCorner.Parent = userAvatar
-
-local userAvatarStroke = Instance.new("UIStroke")
-userAvatarStroke.Thickness = 1
-userAvatarStroke.Color = COL_BORDER
-userAvatarStroke.Transparency = 0.2
-userAvatarStroke.Parent = userAvatar
-
-local userWelcome = Instance.new("TextLabel")
-userWelcome.Size                   = UDim2.new(1, -46, 1, 0)
-userWelcome.Position               = UDim2.new(0, 50, 0, 0)
-userWelcome.BackgroundTransparency = 1
-userWelcome.ZIndex                 = 9
-userWelcome.Text                   = "Welcome " .. LocalPlayer.Name .. "!"
-userWelcome.Font                   = Enum.Font.GothamBold
-userWelcome.TextSize               = 13
-userWelcome.TextColor3             = Color3.fromRGB(255, 255, 255)
-userWelcome.TextXAlignment         = Enum.TextXAlignment.Left
-userWelcome.Parent                 = userBadge
 
 local LoadFrame = Instance.new("Frame")
 LoadFrame.Size             = UDim2.new(1, 0, 1, 0)
@@ -675,10 +619,95 @@ local function makeColorPicker(parent, title, order, onColor)
     return row
 end
 
-local aimbotPanel  = createTab("Aimbot",  1)
-local visualsPanel = createTab("Visuals", 2)
-local partPanel    = createTab("Part selection", 3)
-local notesPanel   = createTab("Notes",   4)
+local homePanel    = createTab("Home", 1)
+local aimbotPanel  = createTab("Aimbot",  2)
+local visualsPanel = createTab("Visuals", 3)
+local partPanel    = createTab("Part selection", 4)
+local notesPanel   = createTab("Notes",   5)
+
+local homeHeader = makeLabel(homePanel, "Home", 1)
+homeHeader.TextSize = 15
+
+local homeSubHeader = makeLabel(homePanel, "Session + Server Information", 2)
+homeSubHeader.TextColor3 = COL_DIM
+
+local function makeInfoRow(parent, title, order)
+    local row = Instance.new("TextLabel")
+    row.Size                   = UDim2.new(1, 0, 0, 20)
+    row.BackgroundTransparency = 1
+    row.Font                   = Enum.Font.GothamBold
+    row.TextSize               = 12
+    row.TextColor3             = Color3.fromRGB(255, 255, 255)
+    row.TextXAlignment         = Enum.TextXAlignment.Left
+    row.LayoutOrder            = order
+    row.Text                   = title
+    row.Parent                 = parent
+    return row
+end
+
+local statsRows = {
+    username = makeInfoRow(homePanel, "Username: " .. LocalPlayer.Name, 3),
+    userId = makeInfoRow(homePanel, "User ID: " .. tostring(LocalPlayer.UserId), 4),
+    accountAge = makeInfoRow(homePanel, "Account Age: " .. tostring(LocalPlayer.AccountAge) .. " days", 5),
+    serverPlayers = makeInfoRow(homePanel, "Players: 0", 6),
+    placeId = makeInfoRow(homePanel, "Place ID: " .. tostring(game.PlaceId), 7),
+    jobId = makeInfoRow(homePanel, "Server ID: " .. string.sub(game.JobId ~= "" and game.JobId or "Private", 1, 18), 8),
+    uptime = makeInfoRow(homePanel, "Session Uptime: 00:00", 9),
+    memory = makeInfoRow(homePanel, "Client Memory: -- MB", 10),
+}
+
+local thumbContent, thumbReady = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+local userBadge = Instance.new("Frame")
+userBadge.Size                   = UDim2.new(1, 0, 0, 58)
+userBadge.BackgroundTransparency = 1
+userBadge.LayoutOrder            = 99
+userBadge.Parent                 = homePanel
+
+local userBadgeBG = Instance.new("Frame")
+userBadgeBG.Size                   = UDim2.new(1, 0, 1, 0)
+userBadgeBG.BackgroundColor3       = COL_PANEL_ALT
+userBadgeBG.BackgroundTransparency = 0.08
+userBadgeBG.BorderSizePixel        = 0
+userBadgeBG.Parent                 = userBadge
+
+local userBadgeCorner = Instance.new("UICorner")
+userBadgeCorner.CornerRadius = UDim.new(0, 10)
+userBadgeCorner.Parent = userBadgeBG
+
+local userBadgeStroke = Instance.new("UIStroke")
+userBadgeStroke.Thickness = 1
+userBadgeStroke.Color = COL_BORDER
+userBadgeStroke.Transparency = 0.1
+userBadgeStroke.Parent = userBadgeBG
+
+local userAvatar = Instance.new("ImageLabel")
+userAvatar.Size                   = UDim2.new(0, 46, 0, 46)
+userAvatar.Position               = UDim2.new(0, 6, 0.5, -23)
+userAvatar.BackgroundColor3       = COL_PANEL
+userAvatar.BorderSizePixel        = 0
+userAvatar.Image                  = thumbReady and thumbContent or ""
+userAvatar.Parent                 = userBadge
+
+local userAvatarCorner = Instance.new("UICorner")
+userAvatarCorner.CornerRadius = UDim.new(1, 0)
+userAvatarCorner.Parent = userAvatar
+
+local userAvatarStroke = Instance.new("UIStroke")
+userAvatarStroke.Thickness = 1
+userAvatarStroke.Color = COL_BORDER
+userAvatarStroke.Transparency = 0.2
+userAvatarStroke.Parent = userAvatar
+
+local userWelcome = Instance.new("TextLabel")
+userWelcome.Size                   = UDim2.new(1, -64, 1, 0)
+userWelcome.Position               = UDim2.new(0, 60, 0, 0)
+userWelcome.BackgroundTransparency = 1
+userWelcome.Text                   = "Welcome " .. LocalPlayer.Name .. "!"
+userWelcome.Font                   = Enum.Font.GothamBold
+userWelcome.TextSize               = 15
+userWelcome.TextColor3             = Color3.fromRGB(255, 255, 255)
+userWelcome.TextXAlignment         = Enum.TextXAlignment.Left
+userWelcome.Parent                 = userBadge
 
 makeToggle(aimbotPanel, "Enable Aimbot", 1, function(val)
     aimbotEnabled = val
@@ -763,6 +792,27 @@ end
 makeNote(notesPanel, "Developer: IshKeb", 1)
 makeNote(notesPanel, "Note: this script should work for most games.", 2)
 makeNote(notesPanel, "Toggle key is Insert", 3)
+
+local scriptStart = os.clock()
+local function formatClock(seconds)
+    local mins = math.floor(seconds / 60)
+    local secs = math.floor(seconds % 60)
+    return string.format("%02d:%02d", mins, secs)
+end
+
+local function updateHomeStats()
+    local currentPlayers = #Players:GetPlayers()
+    local maxPlayers = Players.MaxPlayers
+    statsRows.serverPlayers.Text = string.format("Players: %d/%d", currentPlayers, maxPlayers)
+    statsRows.uptime.Text = "Session Uptime: " .. formatClock(os.clock() - scriptStart)
+
+    local memoryMb = math.floor(collectgarbage("count") / 1024)
+    local totalMemory = StatsService:GetTotalMemoryUsageMb()
+    statsRows.memory.Text = string.format("Client Memory: %d MB (Total %.0f MB)", memoryMb, totalMemory)
+end
+
+Players.PlayerAdded:Connect(updateHomeStats)
+Players.PlayerRemoving:Connect(updateHomeStats)
 
 local fovCircle = Drawing.new("Circle")
 fovCircle.Visible   = false
@@ -1005,6 +1055,7 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 RunService.RenderStepped:Connect(function()
+    updateHomeStats()
     local mousePos = getMousePos()
 
     fovCircle.Visible = aimbotEnabled
@@ -1214,6 +1265,6 @@ task.spawn(function()
     task.wait(0.35)
 
     LoadFrame:Destroy()
-    switchTab("Aimbot")
+    switchTab("Home")
     MainFrame.Visible = true
 end)
