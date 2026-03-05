@@ -4,6 +4,7 @@ local RunService        = game:GetService("RunService")
 local UserInputService  = game:GetService("UserInputService")
 local TweenService      = game:GetService("TweenService")
 local StatsService      = game:GetService("Stats")
+local HttpService       = game:GetService("HttpService")
 local Camera            = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
@@ -931,6 +932,91 @@ local function countSavedConfigs()
     return total
 end
 
+local CONFIGS_FILE = "IshKeb_Configs.json"
+local function colorToTable(c)
+    return {r = c.R, g = c.G, b = c.B}
+end
+
+local function tableToColor(t, fallback)
+    if type(t) ~= "table" then return fallback end
+    if type(t.r) ~= "number" or type(t.g) ~= "number" or type(t.b) ~= "number" then return fallback end
+    return Color3.new(math.clamp(t.r, 0, 1), math.clamp(t.g, 0, 1), math.clamp(t.b, 0, 1))
+end
+
+local function serializeConfig(config)
+    return {
+        aimbotEnabled = config.aimbotEnabled,
+        fovRadius = config.fovRadius,
+        smoothnessValue = config.smoothnessValue,
+        visibleOnly = config.visibleOnly,
+        legitMode = config.legitMode,
+        nameEnabled = config.nameEnabled,
+        healthEnabled = config.healthEnabled,
+        chamsEnabled = config.chamsEnabled,
+        skeletonEnabled = config.skeletonEnabled,
+        tracersEnabled = config.tracersEnabled,
+        aimPartMode = config.aimPartMode,
+        fovColor = colorToTable(config.fovColor),
+        espColor = colorToTable(config.espColor),
+        aimBindType = config.aimBindType,
+        aimBindValueName = config.aimBindValue and config.aimBindValue.Name or "MouseButton2",
+    }
+end
+
+local function deserializeConfig(config)
+    if type(config) ~= "table" then return nil end
+    local bindType = config.aimBindType == "KeyCode" and "KeyCode" or "UserInputType"
+    local bindEnum = bindType == "KeyCode" and Enum.KeyCode[config.aimBindValueName or "Unknown"] or Enum.UserInputType[config.aimBindValueName or "MouseButton2"]
+    if not bindEnum then
+        bindType = "UserInputType"
+        bindEnum = Enum.UserInputType.MouseButton2
+    end
+
+    return {
+        aimbotEnabled = config.aimbotEnabled == true,
+        fovRadius = tonumber(config.fovRadius) or fovRadius,
+        smoothnessValue = tonumber(config.smoothnessValue) or 15,
+        visibleOnly = config.visibleOnly == true,
+        legitMode = config.legitMode == true,
+        nameEnabled = config.nameEnabled == true,
+        healthEnabled = config.healthEnabled == true,
+        chamsEnabled = config.chamsEnabled == true,
+        skeletonEnabled = config.skeletonEnabled == true,
+        tracersEnabled = config.tracersEnabled == true,
+        aimPartMode = type(config.aimPartMode) == "string" and config.aimPartMode or aimPartMode,
+        fovColor = tableToColor(config.fovColor, fovColor),
+        espColor = tableToColor(config.espColor, espColor),
+        aimBindType = bindType,
+        aimBindValue = bindEnum,
+    }
+end
+
+local function saveConfigsToDisk()
+    if not writefile then return end
+    local serializable = {}
+    for name, config in pairs(savedConfigs) do
+        serializable[name] = serializeConfig(config)
+    end
+    local ok, encoded = pcall(HttpService.JSONEncode, HttpService, serializable)
+    if ok then
+        pcall(writefile, CONFIGS_FILE, encoded)
+    end
+end
+
+local function loadConfigsFromDisk()
+    if not readfile or not isfile or not isfile(CONFIGS_FILE) then return end
+    local okRead, contents = pcall(readfile, CONFIGS_FILE)
+    if not okRead then return end
+    local okDecode, parsed = pcall(HttpService.JSONDecode, HttpService, contents)
+    if not okDecode or type(parsed) ~= "table" then return end
+    for name, config in pairs(parsed) do
+        local loaded = deserializeConfig(config)
+        if loaded and type(name) == "string" and name ~= "" then
+            savedConfigs[name] = loaded
+        end
+    end
+end
+
 makeLabel(configsPanel, "Configs", 1)
 
 local configNameBox = Instance.new("TextBox")
@@ -990,31 +1076,65 @@ configListLayout.Padding = UDim.new(0, 4)
 configListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 configListLayout.Parent = configListFrame
 
+local saveConfigFrame = Instance.new("Frame")
+saveConfigFrame.Size = UDim2.new(1, 0, 0, 40)
+saveConfigFrame.BackgroundColor3 = COL_PANEL_ALT
+saveConfigFrame.BorderSizePixel = 0
+saveConfigFrame.LayoutOrder = 5
+saveConfigFrame.Parent = configsPanel
+
+local saveConfigFrameCorner = Instance.new("UICorner")
+saveConfigFrameCorner.CornerRadius = UDim.new(0, 8)
+saveConfigFrameCorner.Parent = saveConfigFrame
+
+local saveConfigFrameStroke = Instance.new("UIStroke")
+saveConfigFrameStroke.Thickness = 1
+saveConfigFrameStroke.Color = COL_BORDER
+saveConfigFrameStroke.Transparency = 0.1
+saveConfigFrameStroke.Parent = saveConfigFrame
+
 local saveConfigBtn = Instance.new("TextButton")
-saveConfigBtn.Size = UDim2.new(1, 0, 0, 32)
+saveConfigBtn.Size = UDim2.new(1, -8, 1, -8)
+saveConfigBtn.Position = UDim2.new(0, 4, 0, 4)
 saveConfigBtn.BackgroundColor3 = COL_PANEL
 saveConfigBtn.BorderSizePixel = 0
-saveConfigBtn.LayoutOrder = 5
 saveConfigBtn.Text = "Save Config"
 saveConfigBtn.Font = Enum.Font.GothamBold
 saveConfigBtn.TextSize = 12
 saveConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-saveConfigBtn.Parent = configsPanel
+saveConfigBtn.Parent = saveConfigFrame
 
 local saveConfigCorner = Instance.new("UICorner")
 saveConfigCorner.CornerRadius = UDim.new(0, 6)
 saveConfigCorner.Parent = saveConfigBtn
 
+local loadConfigFrame = Instance.new("Frame")
+loadConfigFrame.Size = UDim2.new(1, 0, 0, 40)
+loadConfigFrame.BackgroundColor3 = COL_PANEL_ALT
+loadConfigFrame.BorderSizePixel = 0
+loadConfigFrame.LayoutOrder = 6
+loadConfigFrame.Parent = configsPanel
+
+local loadConfigFrameCorner = Instance.new("UICorner")
+loadConfigFrameCorner.CornerRadius = UDim.new(0, 8)
+loadConfigFrameCorner.Parent = loadConfigFrame
+
+local loadConfigFrameStroke = Instance.new("UIStroke")
+loadConfigFrameStroke.Thickness = 1
+loadConfigFrameStroke.Color = COL_BORDER
+loadConfigFrameStroke.Transparency = 0.1
+loadConfigFrameStroke.Parent = loadConfigFrame
+
 local loadConfigBtn = Instance.new("TextButton")
-loadConfigBtn.Size = UDim2.new(1, 0, 0, 32)
+loadConfigBtn.Size = UDim2.new(1, -8, 1, -8)
+loadConfigBtn.Position = UDim2.new(0, 4, 0, 4)
 loadConfigBtn.BackgroundColor3 = COL_PANEL
 loadConfigBtn.BorderSizePixel = 0
-loadConfigBtn.LayoutOrder = 6
 loadConfigBtn.Text = "Load Config"
 loadConfigBtn.Font = Enum.Font.GothamBold
 loadConfigBtn.TextSize = 12
 loadConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-loadConfigBtn.Parent = configsPanel
+loadConfigBtn.Parent = loadConfigFrame
 
 local loadConfigCorner = Instance.new("UICorner")
 loadConfigCorner.CornerRadius = UDim.new(0, 6)
@@ -1133,6 +1253,7 @@ saveConfigBtn.MouseButton1Click:Connect(function()
     savedConfigs[name] = getConfigSnapshot()
     selectedConfigName = name
     configNameBox.Text = name
+    saveConfigsToDisk()
     rebuildConfigList()
 end)
 
@@ -1141,6 +1262,7 @@ loadConfigBtn.MouseButton1Click:Connect(function()
     applyConfig(savedConfigs[selectedConfigName])
 end)
 
+loadConfigsFromDisk()
 rebuildConfigList()
 
 local scriptStart = os.clock()
