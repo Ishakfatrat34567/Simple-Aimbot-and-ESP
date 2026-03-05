@@ -18,6 +18,7 @@ local LOADING_DURATION   = 5
 local TOGGLE_TWEEN_INFO = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 local smoothness    = 1 - (0.15 * SMOOTHNESS_SCALE) 
+local hardLockOn    = false
 local function clampLerpAlpha(value)
     return math.clamp(value, 0.05, 0.98)
 end
@@ -758,8 +759,14 @@ makeSlider(aimbotPanel, "FOV Circle Size", 2, 20, 400, fovRadius, function(val)
     fovRadius = val
 end)
 
-makeSlider(aimbotPanel, "Aim Smoothness", 3, -1.00, 1.00, 0.15, function(val)
-    smoothness = 1 - (val * SMOOTHNESS_SCALE)
+makeSlider(aimbotPanel, "Aim Smoothness", 3, 0, 100, 15, function(val)
+    local smoothPercent = math.clamp(val / 100, 0, 1)
+    hardLockOn = smoothPercent <= 0
+    if hardLockOn then
+        smoothness = 1
+    else
+        smoothness = 1 - (smoothPercent * SMOOTHNESS_SCALE)
+    end
 end)
 
 makeToggle(aimbotPanel, "Visible Only", 4, function(val)
@@ -772,7 +779,55 @@ makeToggle(aimbotPanel, "Legit mode", 5, function(val)
     lockedTarget = nil
 end)
 
-makeLabel(aimbotPanel, "Hold M2 (Right-Click) to aim.", 6)
+local aimBindType = "UserInputType"
+local aimBindValue = Enum.UserInputType.MouseButton2
+local waitingForAimbotBind = false
+
+local function getBindDisplayText()
+    if aimBindType == "KeyCode" then
+        return aimBindValue.Name
+    end
+    if aimBindValue == Enum.UserInputType.MouseButton1 then return "Mouse1" end
+    if aimBindValue == Enum.UserInputType.MouseButton2 then return "Mouse2" end
+    if aimBindValue == Enum.UserInputType.MouseButton3 then return "Mouse3" end
+    return aimBindValue.Name
+end
+
+local function inputMatchesAimbotBind(input)
+    if aimBindType == "KeyCode" then
+        return input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == aimBindValue
+    end
+    return input.UserInputType == aimBindValue
+end
+
+local aimBindButton = Instance.new("TextButton")
+aimBindButton.Size             = UDim2.new(1, 0, 0, 32)
+aimBindButton.BackgroundColor3 = COL_PANEL
+aimBindButton.BorderSizePixel  = 0
+aimBindButton.LayoutOrder      = 6
+aimBindButton.Text             = "Rebind Aimbot Key: " .. getBindDisplayText()
+aimBindButton.Font             = Enum.Font.GothamBold
+aimBindButton.TextSize         = 12
+aimBindButton.TextColor3       = Color3.fromRGB(255, 255, 255)
+aimBindButton.Parent           = aimbotPanel
+
+local aimBindCorner = Instance.new("UICorner")
+aimBindCorner.CornerRadius = UDim.new(0, 6)
+aimBindCorner.Parent = aimBindButton
+
+local aimBindHint = makeLabel(aimbotPanel, "Hold Mouse2 to aim.", 7)
+
+local function refreshBindText()
+    local bindName = getBindDisplayText()
+    aimBindButton.Text = "Rebind Aimbot Key: " .. bindName
+    aimBindHint.Text = "Hold " .. bindName .. " to aim."
+end
+
+aimBindButton.MouseButton1Click:Connect(function()
+    waitingForAimbotBind = true
+    aimBindButton.Text = "Press any keyboard or mouse button..."
+end)
+
 makeColorPicker(aimbotPanel, "FOV Circle Color", 98, function(color)
     fovColor = color
 end)
@@ -1080,7 +1135,26 @@ end
 local m2Held = false
 
 UserInputService.InputBegan:Connect(function(input, gpe)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+    if waitingForAimbotBind then
+        if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode ~= Enum.KeyCode.Unknown then
+            aimBindType = "KeyCode"
+            aimBindValue = input.KeyCode
+            waitingForAimbotBind = false
+            refreshBindText()
+            return
+        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.MouseButton2
+            or input.UserInputType == Enum.UserInputType.MouseButton3 then
+            aimBindType = "UserInputType"
+            aimBindValue = input.UserInputType
+            waitingForAimbotBind = false
+            refreshBindText()
+            return
+        end
+    end
+
+    if inputMatchesAimbotBind(input) then
         m2Held = true
         return
     end
@@ -1088,7 +1162,7 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+    if inputMatchesAimbotBind(input) then
         m2Held      = false
         lockedTarget = nil
     end
@@ -1123,8 +1197,8 @@ RunService.RenderStepped:Connect(function()
                         local target   = Vector2.new(screenPos.X, screenPos.Y)
                         local currentSmoothness = legitMode
                             and clampLerpAlpha(1 - (LEGIT_SMOOTHNESS_PERCENT * SMOOTHNESS_SCALE))
-                            or clampLerpAlpha(smoothness)
-                        local newPos   = current:Lerp(target, currentSmoothness)
+                            or (hardLockOn and 1 or clampLerpAlpha(smoothness))
+                        local newPos   = currentSmoothness >= 1 and target or current:Lerp(target, currentSmoothness)
                         local delta = newPos - current
                         if mousemoverel then
                             local moveX = math.round(delta.X)
