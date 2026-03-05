@@ -119,25 +119,6 @@ SubtitleLabel.TextColor3        = Color3.fromRGB(255, 255, 255)
 SubtitleLabel.TextXAlignment    = Enum.TextXAlignment.Left
 SubtitleLabel.Parent            = TitleBar
 
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size              = UDim2.new(0, 28, 0, 28)
-CloseBtn.Position          = UDim2.new(1, -38, 0, 12)
-CloseBtn.BackgroundColor3  = COL_PANEL_ALT
-CloseBtn.Text              = "✕"
-CloseBtn.Font              = Enum.Font.GothamBold
-CloseBtn.TextSize          = 13
-CloseBtn.TextColor3        = Color3.fromRGB(255, 255, 255)
-CloseBtn.BorderSizePixel   = 0
-CloseBtn.Parent            = TitleBar
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
-CloseCorner.Parent = CloseBtn
-
-CloseBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-end)
-
 local KeyHint = Instance.new("TextLabel")
 KeyHint.Size                   = UDim2.new(1, 0, 0, 16)
 KeyHint.Position               = UDim2.new(0, 0, 1, -20)
@@ -148,6 +129,65 @@ KeyHint.TextSize               = 11
 KeyHint.TextColor3             = Color3.fromRGB(255, 255, 255)
 KeyHint.TextXAlignment         = Enum.TextXAlignment.Center
 KeyHint.Parent                 = MainFrame
+
+local firstCloseNotificationShown = false
+local function showFirstCloseNotification()
+    local notify = Instance.new("Frame")
+    notify.Size = UDim2.new(0, 290, 0, 58)
+    notify.AnchorPoint = Vector2.new(1, 1)
+    notify.Position = UDim2.new(1, 320, 1, -18)
+    notify.BackgroundColor3 = COL_PANEL
+    notify.BorderSizePixel = 0
+    notify.ZIndex = 40
+    notify.Parent = ScreenGui
+
+    local notifyCorner = Instance.new("UICorner")
+    notifyCorner.CornerRadius = UDim.new(0, 10)
+    notifyCorner.Parent = notify
+
+    local notifyStroke = Instance.new("UIStroke")
+    notifyStroke.Thickness = 1
+    notifyStroke.Color = COL_BORDER
+    notifyStroke.Transparency = 0.1
+    notifyStroke.Parent = notify
+
+    local notifyAccent = Instance.new("Frame")
+    notifyAccent.Size = UDim2.new(0, 4, 1, 0)
+    notifyAccent.BackgroundColor3 = COL_ACCENT
+    notifyAccent.BorderSizePixel = 0
+    notifyAccent.ZIndex = 41
+    notifyAccent.Parent = notify
+
+    local notifyAccentCorner = Instance.new("UICorner")
+    notifyAccentCorner.CornerRadius = UDim.new(0, 10)
+    notifyAccentCorner.Parent = notifyAccent
+
+    local notifyText = Instance.new("TextLabel")
+    notifyText.Size = UDim2.new(1, -20, 1, 0)
+    notifyText.Position = UDim2.new(0, 14, 0, 0)
+    notifyText.BackgroundTransparency = 1
+    notifyText.Text = "Press Insert to open the menu!"
+    notifyText.Font = Enum.Font.GothamBold
+    notifyText.TextSize = 14
+    notifyText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    notifyText.TextXAlignment = Enum.TextXAlignment.Left
+    notifyText.ZIndex = 41
+    notifyText.Parent = notify
+
+    local tweenIn = TweenService:Create(notify, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Position = UDim2.new(1, -18, 1, -18)
+    })
+    local tweenOut = TweenService:Create(notify, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        Position = UDim2.new(1, 320, 1, -18)
+    })
+
+    tweenIn:Play()
+    tweenIn.Completed:Wait()
+    task.wait(5)
+    tweenOut:Play()
+    tweenOut.Completed:Wait()
+    notify:Destroy()
+end
 
 local LoadFrame = Instance.new("Frame")
 LoadFrame.Size             = UDim2.new(1, 0, 1, 0)
@@ -1214,7 +1254,12 @@ end)
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.Insert then
+        local wasVisible = MainFrame.Visible
         MainFrame.Visible = not MainFrame.Visible
+        if wasVisible and not firstCloseNotificationShown then
+            firstCloseNotificationShown = true
+            task.spawn(showFirstCloseNotification)
+        end
     end
 end)
 
