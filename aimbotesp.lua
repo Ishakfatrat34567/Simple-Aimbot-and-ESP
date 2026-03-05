@@ -1049,15 +1049,24 @@ configDropdownCorner.CornerRadius = UDim.new(0, 6)
 configDropdownCorner.Parent = configDropdown
 
 local configDropdownButton = Instance.new("TextButton")
-configDropdownButton.Size = UDim2.new(1, -10, 1, 0)
+configDropdownButton.Size = UDim2.new(1, -36, 1, 0)
 configDropdownButton.Position = UDim2.new(0, 10, 0, 0)
 configDropdownButton.BackgroundTransparency = 1
-configDropdownButton.Text = "Stored Configs: none"
+configDropdownButton.Text = "Open Stored Configs"
 configDropdownButton.Font = Enum.Font.GothamBold
 configDropdownButton.TextSize = 12
 configDropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 configDropdownButton.TextXAlignment = Enum.TextXAlignment.Left
 configDropdownButton.Parent = configDropdown
+
+local configDropdownArrow = Instance.new("ImageLabel")
+configDropdownArrow.Size = UDim2.new(0, 18, 0, 18)
+configDropdownArrow.AnchorPoint = Vector2.new(1, 0.5)
+configDropdownArrow.Position = UDim2.new(1, -10, 0.5, 0)
+configDropdownArrow.BackgroundTransparency = 1
+configDropdownArrow.Image = "rbxassetid://11552476835"
+configDropdownArrow.ImageColor3 = Color3.fromRGB(255, 255, 255)
+configDropdownArrow.Parent = configDropdown
 
 local configListFrame = Instance.new("Frame")
 configListFrame.Size = UDim2.new(1, 0, 0, 0)
@@ -1202,13 +1211,11 @@ local function rebuildConfigList()
     table.sort(names)
 
     if #names == 0 then
-        configDropdownButton.Text = "Stored Configs: none"
         selectedConfigName = nil
     else
         if not selectedConfigName or not savedConfigs[selectedConfigName] then
             selectedConfigName = names[1]
         end
-        configDropdownButton.Text = "Stored Configs: " .. selectedConfigName
     end
 
     for idx, name in ipairs(names) do
@@ -1230,7 +1237,6 @@ local function rebuildConfigList()
 
         option.MouseButton1Click:Connect(function()
             selectedConfigName = name
-            configDropdownButton.Text = "Stored Configs: " .. selectedConfigName
             configListFrame.Visible = false
             configListFrame.Size = UDim2.new(1, 0, 0, 0)
         end)
