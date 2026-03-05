@@ -37,6 +37,7 @@ local skeletonEnabled = false
 local tracersEnabled = false
 
 local espObjects = {}   
+local spectatingPlayer = nil
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name            = "AimbotESPMenu"
@@ -668,12 +669,13 @@ local function makeColorPicker(parent, title, order, onColor)
     return row
 end
 
-local homePanel    = createTab("Home", 1)
-local aimbotPanel  = createTab("Aimbot",  2)
-local visualsPanel = createTab("Visuals", 3)
-local partPanel    = createTab("Part selection", 4)
-local notesPanel   = createTab("Notes",   5)
-local configsPanel = createTab("Configs", 6)
+local homePanel     = createTab("Home", 1)
+local aimbotPanel   = createTab("Aimbot",  2)
+local visualsPanel  = createTab("Visuals", 3)
+local partPanel     = createTab("Part selection", 4)
+local notesPanel    = createTab("Notes",   5)
+local spectatePanel = createTab("Spectate", 6)
+local configsPanel  = createTab("Configs", 7)
 
 local homeHeader = makeLabel(homePanel, "Home", 1)
 homeHeader.TextSize = 15
@@ -913,6 +915,139 @@ end
 makeNote(notesPanel, "Developer: IshKeb", 1)
 makeNote(notesPanel, "Note: this script should work for most games.", 2)
 makeNote(notesPanel, "Toggle key is Insert", 3)
+
+makeLabel(spectatePanel, "Spectate", 1)
+
+local spectateStatus = makeLabel(spectatePanel, "Not spectating", 2)
+spectateStatus.TextColor3 = COL_DIM
+
+local stopSpectateFrame = Instance.new("Frame")
+stopSpectateFrame.Size = UDim2.new(1, 0, 0, 40)
+stopSpectateFrame.BackgroundColor3 = COL_PANEL_ALT
+stopSpectateFrame.BorderSizePixel = 0
+stopSpectateFrame.LayoutOrder = 3
+stopSpectateFrame.Parent = spectatePanel
+
+local stopSpectateFrameCorner = Instance.new("UICorner")
+stopSpectateFrameCorner.CornerRadius = UDim.new(0, 8)
+stopSpectateFrameCorner.Parent = stopSpectateFrame
+
+local stopSpectateFrameStroke = Instance.new("UIStroke")
+stopSpectateFrameStroke.Thickness = 1
+stopSpectateFrameStroke.Color = COL_BORDER
+stopSpectateFrameStroke.Transparency = 0.1
+stopSpectateFrameStroke.Parent = stopSpectateFrame
+
+local stopSpectateBtn = Instance.new("TextButton")
+stopSpectateBtn.Size = UDim2.new(1, -8, 1, -8)
+stopSpectateBtn.Position = UDim2.new(0, 4, 0, 4)
+stopSpectateBtn.BackgroundColor3 = COL_PANEL
+stopSpectateBtn.BorderSizePixel = 0
+stopSpectateBtn.Text = "Stop Spectating"
+stopSpectateBtn.Font = Enum.Font.GothamBold
+stopSpectateBtn.TextSize = 12
+stopSpectateBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+stopSpectateBtn.Parent = stopSpectateFrame
+
+local stopSpectateCorner = Instance.new("UICorner")
+stopSpectateCorner.CornerRadius = UDim.new(0, 6)
+stopSpectateCorner.Parent = stopSpectateBtn
+
+local spectateList = Instance.new("ScrollingFrame")
+spectateList.Size = UDim2.new(1, 0, 0, 220)
+spectateList.BackgroundColor3 = COL_PANEL
+spectateList.BorderSizePixel = 0
+spectateList.LayoutOrder = 4
+spectateList.AutomaticCanvasSize = Enum.AutomaticSize.None
+spectateList.CanvasSize = UDim2.new(0, 0, 0, 0)
+spectateList.ScrollBarThickness = 4
+spectateList.Parent = spectatePanel
+
+local spectateListCorner = Instance.new("UICorner")
+spectateListCorner.CornerRadius = UDim.new(0, 8)
+spectateListCorner.Parent = spectateList
+
+local spectateListStroke = Instance.new("UIStroke")
+spectateListStroke.Thickness = 1
+spectateListStroke.Color = COL_BORDER
+spectateListStroke.Transparency = 0.1
+spectateListStroke.Parent = spectateList
+
+local spectateListLayout = Instance.new("UIListLayout")
+spectateListLayout.Padding = UDim.new(0, 4)
+spectateListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+spectateListLayout.Parent = spectateList
+
+local function stopSpectating()
+    spectatingPlayer = nil
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        Camera.CameraType = Enum.CameraType.Custom
+        Camera.CameraSubject = hum
+    end
+    spectateStatus.Text = "Not spectating"
+end
+
+local function spectatePlayer(player)
+    if not player or player == LocalPlayer then return end
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then
+        task.spawn(showCustomNotification, "Player is not ready to spectate.", 5)
+        return
+    end
+    spectatingPlayer = player
+    Camera.CameraType = Enum.CameraType.Custom
+    Camera.CameraSubject = humanoid
+    spectateStatus.Text = "Spectating: " .. player.DisplayName
+end
+
+local function rebuildSpectateList()
+    for _, child in ipairs(spectateList:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+
+    local candidates = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            table.insert(candidates, player)
+        end
+    end
+
+    table.sort(candidates, function(a, b)
+        return string.lower(a.DisplayName) < string.lower(b.DisplayName)
+    end)
+
+    for idx, player in ipairs(candidates) do
+        local row = Instance.new("TextButton")
+        row.Size = UDim2.new(1, -8, 0, 28)
+        row.Position = UDim2.new(0, 4, 0, 0)
+        row.BackgroundColor3 = COL_PANEL_ALT
+        row.BorderSizePixel = 0
+        row.LayoutOrder = idx
+        row.Text = player.DisplayName
+        row.Font = Enum.Font.GothamBold
+        row.TextSize = 12
+        row.TextColor3 = Color3.fromRGB(255, 255, 255)
+        row.Parent = spectateList
+
+        local rowCorner = Instance.new("UICorner")
+        rowCorner.CornerRadius = UDim.new(0, 6)
+        rowCorner.Parent = row
+
+        row.MouseButton1Click:Connect(function()
+            spectatePlayer(player)
+        end)
+    end
+
+    spectateList.CanvasSize = UDim2.new(0, 0, 0, math.max(0, #candidates * 32 + 6))
+end
+
+stopSpectateBtn.MouseButton1Click:Connect(stopSpectating)
+rebuildSpectateList()
 
 local savedConfigs = {}
 local selectedConfigName = nil
@@ -1402,6 +1537,13 @@ end
 
 Players.PlayerAdded:Connect(updateHomeStats)
 Players.PlayerRemoving:Connect(updateHomeStats)
+Players.PlayerAdded:Connect(rebuildSpectateList)
+Players.PlayerRemoving:Connect(function(player)
+    if spectatingPlayer == player then
+        stopSpectating()
+    end
+    rebuildSpectateList()
+end)
 
 local fovCircle = Drawing.new("Circle")
 fovCircle.Visible   = false
@@ -1664,6 +1806,16 @@ end)
 
 RunService.RenderStepped:Connect(function()
     updateHomeStats()
+    if spectatingPlayer then
+        local character = spectatingPlayer.Character
+        local hum = character and character:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Health > 0 then
+            Camera.CameraType = Enum.CameraType.Custom
+            Camera.CameraSubject = hum
+        else
+            stopSpectating()
+        end
+    end
     local mousePos = getMousePos()
 
     fovCircle.Visible = aimbotEnabled
