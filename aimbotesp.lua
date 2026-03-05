@@ -38,6 +38,8 @@ local tracersEnabled = false
 
 local espObjects = {}   
 local spectatingPlayer = nil
+local stopSpectating
+local rebuildSpectateList
 
 local function getPlayerDisplayName(player)
     return (player and (player.DisplayName or player.Name)) or "Unknown"
@@ -945,6 +947,9 @@ makeNote(notesPanel, "Developer: IshKeb", 1)
 makeNote(notesPanel, "Note: this script should work for most games.", 2)
 makeNote(notesPanel, "Toggle key is Insert", 3)
 
+do
+makeLabel(spectatePanel, "Spectate", 1)
+
 makeLabel(spectatePanel, "Spectate", 1)
 
 spectateStatus = makeLabel(spectatePanel, "Not spectating", 2)
@@ -1028,6 +1033,7 @@ spectateListLayout.Padding = UDim.new(0, 4)
 spectateListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 spectateListLayout.Parent = spectateList
 
+local function stopSpectatingImpl()
 function stopSpectating()
 local function stopSpectating()
     spectatingPlayer = nil
@@ -1061,6 +1067,7 @@ local function spectatePlayer(player)
     spectateStatus.Text = "Spectating: " .. getPlayerDisplayName(player)
 end
 
+local function rebuildSpectateListImpl()
 function rebuildSpectateList()
 local function rebuildSpectateList()
     for _, child in ipairs(spectateList:GetChildren()) do
@@ -1104,6 +1111,9 @@ local function rebuildSpectateList()
 
     spectateList.CanvasSize = UDim2.new(0, 0, 0, math.max(0, #candidates * 32 + 6))
 end
+
+stopSpectateBtn.MouseButton1Click:Connect(stopSpectatingImpl)
+rebuildSpectateListImpl()
 
 stopSpectateBtn.MouseButton1Click:Connect(stopSpectating)
 rebuildSpectateList()
@@ -1666,6 +1676,10 @@ end)
 
 loadConfigsFromDisk()
 rebuildConfigList()
+
+stopSpectating = stopSpectatingImpl
+rebuildSpectateList = rebuildSpectateListImpl
+end
 
 local scriptStart = os.clock()
 local function formatClock(seconds)
