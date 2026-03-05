@@ -1064,7 +1064,7 @@ configDropdownArrow.Size = UDim2.new(0, 18, 0, 18)
 configDropdownArrow.AnchorPoint = Vector2.new(1, 0.5)
 configDropdownArrow.Position = UDim2.new(1, -10, 0.5, 0)
 configDropdownArrow.BackgroundTransparency = 1
-configDropdownArrow.Image = "rbxassetid://11552476835"
+configDropdownArrow.Image = "rbxassetid://124463564041369"
 configDropdownArrow.ImageColor3 = Color3.fromRGB(255, 255, 255)
 configDropdownArrow.Parent = configDropdown
 
