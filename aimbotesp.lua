@@ -562,20 +562,30 @@ local function makeSlider(parent, labelText, order, minVal, maxVal, defaultVal, 
     trackBtn.Text                   = ""
     trackBtn.Parent                 = track
 
+    local currentValue = defaultVal
+
+    local function setValue(value, fireCallback)
+        local clamped = math.clamp(value, minVal, maxVal)
+        local t = (clamped - minVal) / (maxVal - minVal)
+        local finalValue
+        if math.type and math.type(minVal) == "integer" then
+            finalValue = math.floor(clamped + 0.5)
+        else
+            finalValue = math.floor(clamped * 100 + 0.5) / 100
+        end
+        currentValue = finalValue
+        fill.Size     = UDim2.new(t, 0, 1, 0)
+        knob.Position = UDim2.new(t, 0, 0.5, 0)
+        valLabel.Text = tostring(finalValue)
+        if fireCallback and callback then callback(finalValue) end
+    end
+
     local function updateFromX(absX)
         local trackAbs  = track.AbsolutePosition.X
         local trackSize = track.AbsoluteSize.X
         local t = math.clamp((absX - trackAbs) / trackSize, 0, 1)
-        local value
-        if math.type and math.type(minVal) == "integer" then
-            value = math.floor(minVal + t * (maxVal - minVal) + 0.5)
-        else
-            value = math.floor((minVal + t * (maxVal - minVal)) * 100 + 0.5) / 100
-        end
-        fill.Size     = UDim2.new(t, 0, 1, 0)
-        knob.Position = UDim2.new(t, 0, 0.5, 0)
-        valLabel.Text = tostring(value)
-        if callback then callback(value) end
+        local rawValue = minVal + t * (maxVal - minVal)
+        setValue(rawValue, true)
     end
 
     trackBtn.MouseButton1Down:Connect(function(x, _y)
@@ -593,7 +603,11 @@ local function makeSlider(parent, labelText, order, minVal, maxVal, defaultVal, 
         end
     end)
 
-    return row
+    return {
+        row = row,
+        setValue = setValue,
+        getValue = function() return currentValue end,
+    }
 end
 
 local function makeColorPicker(parent, title, order, onColor)
@@ -665,6 +679,7 @@ local aimbotPanel  = createTab("Aimbot",  2)
 local visualsPanel = createTab("Visuals", 3)
 local partPanel    = createTab("Part selection", 4)
 local notesPanel   = createTab("Notes",   5)
+local configsPanel = createTab("Configs", 6)
 
 local homeHeader = makeLabel(homePanel, "Home", 1)
 homeHeader.TextSize = 15
@@ -750,16 +765,16 @@ userWelcome.TextColor3             = Color3.fromRGB(255, 255, 255)
 userWelcome.TextXAlignment         = Enum.TextXAlignment.Left
 userWelcome.Parent                 = userBadge
 
-makeToggle(aimbotPanel, "Enable Aimbot", 1, function(val)
+local aimbotToggle = makeToggle(aimbotPanel, "Enable Aimbot", 1, function(val)
     aimbotEnabled = val
     if not val then lockedTarget = nil end
 end)
 
-makeSlider(aimbotPanel, "FOV Circle Size", 2, 20, 400, fovRadius, function(val)
+local fovSlider = makeSlider(aimbotPanel, "FOV Circle Size", 2, 20, 400, fovRadius, function(val)
     fovRadius = val
 end)
 
-makeSlider(aimbotPanel, "Aim Smoothness", 3, 0, 100, 15, function(val)
+local smoothnessSlider = makeSlider(aimbotPanel, "Aim Smoothness", 3, 0, 100, 15, function(val)
     local smoothPercent = math.clamp(val / 100, 0, 1)
     hardLockOn = smoothPercent <= 0
     if hardLockOn then
@@ -769,12 +784,12 @@ makeSlider(aimbotPanel, "Aim Smoothness", 3, 0, 100, 15, function(val)
     end
 end)
 
-makeToggle(aimbotPanel, "Visible Only", 4, function(val)
+local visibleToggle = makeToggle(aimbotPanel, "Visible Only", 4, function(val)
     visibleOnly = val
     if not val then lockedTarget = nil end
 end)
 
-makeToggle(aimbotPanel, "Legit mode", 5, function(val)
+local legitToggle = makeToggle(aimbotPanel, "Legit mode", 5, function(val)
     legitMode = val
     lockedTarget = nil
 end)
@@ -849,11 +864,11 @@ makeColorPicker(aimbotPanel, "FOV Circle Color", 98, function(color)
     fovColor = color
 end)
 
-makeToggle(visualsPanel, "Name ESP",       1, function(val) nameEnabled   = val end)
-makeToggle(visualsPanel, "Health Bar ESP", 2, function(val) healthEnabled = val end)
-makeToggle(visualsPanel, "Chams ESP",      3, function(val) chamsEnabled  = val end)
-makeToggle(visualsPanel, "Skeleton ESP",   4, function(val) skeletonEnabled = val end)
-makeToggle(visualsPanel, "Tracers ESP",    5, function(val) tracersEnabled = val end)
+local nameToggle = makeToggle(visualsPanel, "Name ESP",       1, function(val) nameEnabled   = val end)
+local healthToggle = makeToggle(visualsPanel, "Health Bar ESP", 2, function(val) healthEnabled = val end)
+local chamsToggle = makeToggle(visualsPanel, "Chams ESP",      3, function(val) chamsEnabled  = val end)
+local skeletonToggle = makeToggle(visualsPanel, "Skeleton ESP",   4, function(val) skeletonEnabled = val end)
+local tracersToggle = makeToggle(visualsPanel, "Tracers ESP",    5, function(val) tracersEnabled = val end)
 makeColorPicker(visualsPanel, "ESP Color", 98, function(color)
     espColor = color
 end)
@@ -904,6 +919,229 @@ end
 makeNote(notesPanel, "Developer: IshKeb", 1)
 makeNote(notesPanel, "Note: this script should work for most games.", 2)
 makeNote(notesPanel, "Toggle key is Insert", 3)
+
+local savedConfigs = {}
+local selectedConfigName = nil
+
+local function countSavedConfigs()
+    local total = 0
+    for _ in pairs(savedConfigs) do
+        total = total + 1
+    end
+    return total
+end
+
+makeLabel(configsPanel, "Configs", 1)
+
+local configNameBox = Instance.new("TextBox")
+configNameBox.Size = UDim2.new(1, 0, 0, 32)
+configNameBox.BackgroundColor3 = COL_PANEL
+configNameBox.BorderSizePixel = 0
+configNameBox.LayoutOrder = 2
+configNameBox.PlaceholderText = "Config name (optional)"
+configNameBox.Text = ""
+configNameBox.ClearTextOnFocus = false
+configNameBox.Font = Enum.Font.GothamBold
+configNameBox.TextSize = 12
+configNameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+configNameBox.PlaceholderColor3 = COL_DIM
+configNameBox.Parent = configsPanel
+
+local configNameCorner = Instance.new("UICorner")
+configNameCorner.CornerRadius = UDim.new(0, 6)
+configNameCorner.Parent = configNameBox
+
+local configDropdown = Instance.new("Frame")
+configDropdown.Size = UDim2.new(1, 0, 0, 32)
+configDropdown.BackgroundColor3 = COL_PANEL
+configDropdown.BorderSizePixel = 0
+configDropdown.LayoutOrder = 3
+configDropdown.Parent = configsPanel
+
+local configDropdownCorner = Instance.new("UICorner")
+configDropdownCorner.CornerRadius = UDim.new(0, 6)
+configDropdownCorner.Parent = configDropdown
+
+local configDropdownButton = Instance.new("TextButton")
+configDropdownButton.Size = UDim2.new(1, -10, 1, 0)
+configDropdownButton.Position = UDim2.new(0, 10, 0, 0)
+configDropdownButton.BackgroundTransparency = 1
+configDropdownButton.Text = "Stored Configs: none"
+configDropdownButton.Font = Enum.Font.GothamBold
+configDropdownButton.TextSize = 12
+configDropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+configDropdownButton.TextXAlignment = Enum.TextXAlignment.Left
+configDropdownButton.Parent = configDropdown
+
+local configListFrame = Instance.new("Frame")
+configListFrame.Size = UDim2.new(1, 0, 0, 0)
+configListFrame.BackgroundColor3 = COL_PANEL_ALT
+configListFrame.BorderSizePixel = 0
+configListFrame.LayoutOrder = 4
+configListFrame.Visible = false
+configListFrame.Parent = configsPanel
+
+local configListCorner = Instance.new("UICorner")
+configListCorner.CornerRadius = UDim.new(0, 6)
+configListCorner.Parent = configListFrame
+
+local configListLayout = Instance.new("UIListLayout")
+configListLayout.Padding = UDim.new(0, 4)
+configListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+configListLayout.Parent = configListFrame
+
+local saveConfigBtn = Instance.new("TextButton")
+saveConfigBtn.Size = UDim2.new(1, 0, 0, 32)
+saveConfigBtn.BackgroundColor3 = COL_PANEL
+saveConfigBtn.BorderSizePixel = 0
+saveConfigBtn.LayoutOrder = 5
+saveConfigBtn.Text = "Save Config"
+saveConfigBtn.Font = Enum.Font.GothamBold
+saveConfigBtn.TextSize = 12
+saveConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+saveConfigBtn.Parent = configsPanel
+
+local saveConfigCorner = Instance.new("UICorner")
+saveConfigCorner.CornerRadius = UDim.new(0, 6)
+saveConfigCorner.Parent = saveConfigBtn
+
+local loadConfigBtn = Instance.new("TextButton")
+loadConfigBtn.Size = UDim2.new(1, 0, 0, 32)
+loadConfigBtn.BackgroundColor3 = COL_PANEL
+loadConfigBtn.BorderSizePixel = 0
+loadConfigBtn.LayoutOrder = 6
+loadConfigBtn.Text = "Load Config"
+loadConfigBtn.Font = Enum.Font.GothamBold
+loadConfigBtn.TextSize = 12
+loadConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadConfigBtn.Parent = configsPanel
+
+local loadConfigCorner = Instance.new("UICorner")
+loadConfigCorner.CornerRadius = UDim.new(0, 6)
+loadConfigCorner.Parent = loadConfigBtn
+
+local function getConfigSnapshot()
+    return {
+        aimbotEnabled = aimbotEnabled,
+        fovRadius = fovRadius,
+        smoothnessValue = smoothnessSlider.getValue(),
+        visibleOnly = visibleOnly,
+        legitMode = legitMode,
+        nameEnabled = nameEnabled,
+        healthEnabled = healthEnabled,
+        chamsEnabled = chamsEnabled,
+        skeletonEnabled = skeletonEnabled,
+        tracersEnabled = tracersEnabled,
+        aimPartMode = aimPartMode,
+        fovColor = fovColor,
+        espColor = espColor,
+        aimBindType = aimBindType,
+        aimBindValue = aimBindValue,
+    }
+end
+
+local function applyConfig(config)
+    if not config then return end
+    aimbotToggle.setState(config.aimbotEnabled, true)
+    fovSlider.setValue(config.fovRadius, true)
+    smoothnessSlider.setValue(config.smoothnessValue, true)
+    visibleToggle.setState(config.visibleOnly, true)
+    legitToggle.setState(config.legitMode, true)
+
+    nameToggle.setState(config.nameEnabled, true)
+    healthToggle.setState(config.healthEnabled, true)
+    chamsToggle.setState(config.chamsEnabled, true)
+    skeletonToggle.setState(config.skeletonEnabled, true)
+    tracersToggle.setState(config.tracersEnabled, true)
+
+    fovColor = config.fovColor
+    espColor = config.espColor
+
+    if partToggles[config.aimPartMode] then
+        partToggles[config.aimPartMode].setState(true, true)
+    end
+
+    if config.aimBindType and config.aimBindValue then
+        aimBindType = config.aimBindType
+        aimBindValue = config.aimBindValue
+        refreshBindText()
+    end
+end
+
+local function rebuildConfigList()
+    for _, child in ipairs(configListFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+
+    local names = {}
+    for name, _ in pairs(savedConfigs) do
+        table.insert(names, name)
+    end
+    table.sort(names)
+
+    if #names == 0 then
+        configDropdownButton.Text = "Stored Configs: none"
+        selectedConfigName = nil
+    else
+        if not selectedConfigName or not savedConfigs[selectedConfigName] then
+            selectedConfigName = names[1]
+        end
+        configDropdownButton.Text = "Stored Configs: " .. selectedConfigName
+    end
+
+    for idx, name in ipairs(names) do
+        local option = Instance.new("TextButton")
+        option.Size = UDim2.new(1, -8, 0, 28)
+        option.Position = UDim2.new(0, 4, 0, 0)
+        option.BackgroundColor3 = COL_PANEL
+        option.BorderSizePixel = 0
+        option.LayoutOrder = idx
+        option.Text = name
+        option.Font = Enum.Font.GothamBold
+        option.TextSize = 12
+        option.TextColor3 = Color3.fromRGB(255, 255, 255)
+        option.Parent = configListFrame
+
+        local optionCorner = Instance.new("UICorner")
+        optionCorner.CornerRadius = UDim.new(0, 6)
+        optionCorner.Parent = option
+
+        option.MouseButton1Click:Connect(function()
+            selectedConfigName = name
+            configDropdownButton.Text = "Stored Configs: " .. selectedConfigName
+            configListFrame.Visible = false
+            configListFrame.Size = UDim2.new(1, 0, 0, 0)
+        end)
+    end
+
+    configListFrame.Size = configListFrame.Visible and UDim2.new(1, 0, 0, math.max(0, #names * 32 + 6)) or UDim2.new(1, 0, 0, 0)
+end
+
+configDropdownButton.MouseButton1Click:Connect(function()
+    if next(savedConfigs) == nil then return end
+    configListFrame.Visible = not configListFrame.Visible
+    rebuildConfigList()
+end)
+
+saveConfigBtn.MouseButton1Click:Connect(function()
+    local name = string.gsub(configNameBox.Text, "^%s*(.-)%s*$", "%1")
+    if name == "" then
+        name = "Config " .. tostring(countSavedConfigs() + 1)
+    end
+    savedConfigs[name] = getConfigSnapshot()
+    selectedConfigName = name
+    configNameBox.Text = name
+    rebuildConfigList()
+end)
+
+loadConfigBtn.MouseButton1Click:Connect(function()
+    if not selectedConfigName then return end
+    applyConfig(savedConfigs[selectedConfigName])
+end)
+
+rebuildConfigList()
 
 local scriptStart = os.clock()
 local function formatClock(seconds)
