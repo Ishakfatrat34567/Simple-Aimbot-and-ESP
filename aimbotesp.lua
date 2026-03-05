@@ -800,16 +800,33 @@ local function inputMatchesAimbotBind(input)
     return input.UserInputType == aimBindValue
 end
 
+local aimBindContainer = Instance.new("Frame")
+aimBindContainer.Size = UDim2.new(1, 0, 0, 40)
+aimBindContainer.BackgroundColor3 = COL_PANEL_ALT
+aimBindContainer.BorderSizePixel = 0
+aimBindContainer.LayoutOrder = 6
+aimBindContainer.Parent = aimbotPanel
+
+local aimBindContainerCorner = Instance.new("UICorner")
+aimBindContainerCorner.CornerRadius = UDim.new(0, 8)
+aimBindContainerCorner.Parent = aimBindContainer
+
+local aimBindContainerStroke = Instance.new("UIStroke")
+aimBindContainerStroke.Thickness = 1
+aimBindContainerStroke.Color = COL_BORDER
+aimBindContainerStroke.Transparency = 0.1
+aimBindContainerStroke.Parent = aimBindContainer
+
 local aimBindButton = Instance.new("TextButton")
-aimBindButton.Size             = UDim2.new(1, 0, 0, 32)
+aimBindButton.Size             = UDim2.new(1, -8, 1, -8)
+aimBindButton.Position         = UDim2.new(0, 4, 0, 4)
 aimBindButton.BackgroundColor3 = COL_PANEL
 aimBindButton.BorderSizePixel  = 0
-aimBindButton.LayoutOrder      = 6
 aimBindButton.Text             = "Rebind Aimbot Key: " .. getBindDisplayText()
 aimBindButton.Font             = Enum.Font.GothamBold
 aimBindButton.TextSize         = 12
 aimBindButton.TextColor3       = Color3.fromRGB(255, 255, 255)
-aimBindButton.Parent           = aimbotPanel
+aimBindButton.Parent           = aimBindContainer
 
 local aimBindCorner = Instance.new("UICorner")
 aimBindCorner.CornerRadius = UDim.new(0, 6)
