@@ -947,6 +947,10 @@ makeNote(notesPanel, "Toggle key is Insert", 3)
 
 makeLabel(spectatePanel, "Spectate", 1)
 
+spectateStatus = makeLabel(spectatePanel, "Not spectating", 2)
+spectateStatus.TextColor3 = COL_DIM
+
+stopSpectateFrame = Instance.new("Frame")
 local spectateStatus = makeLabel(spectatePanel, "Not spectating", 2)
 spectateStatus.TextColor3 = COL_DIM
 
@@ -957,6 +961,11 @@ stopSpectateFrame.BorderSizePixel = 0
 stopSpectateFrame.LayoutOrder = 3
 stopSpectateFrame.Parent = spectatePanel
 
+stopSpectateFrameCorner = Instance.new("UICorner")
+stopSpectateFrameCorner.CornerRadius = UDim.new(0, 8)
+stopSpectateFrameCorner.Parent = stopSpectateFrame
+
+stopSpectateFrameStroke = Instance.new("UIStroke")
 local stopSpectateFrameCorner = Instance.new("UICorner")
 stopSpectateFrameCorner.CornerRadius = UDim.new(0, 8)
 stopSpectateFrameCorner.Parent = stopSpectateFrame
@@ -967,6 +976,7 @@ stopSpectateFrameStroke.Color = COL_BORDER
 stopSpectateFrameStroke.Transparency = 0.1
 stopSpectateFrameStroke.Parent = stopSpectateFrame
 
+stopSpectateBtn = Instance.new("TextButton")
 local stopSpectateBtn = Instance.new("TextButton")
 stopSpectateBtn.Size = UDim2.new(1, -8, 1, -8)
 stopSpectateBtn.Position = UDim2.new(0, 4, 0, 4)
@@ -978,6 +988,11 @@ stopSpectateBtn.TextSize = 12
 stopSpectateBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 stopSpectateBtn.Parent = stopSpectateFrame
 
+stopSpectateCorner = Instance.new("UICorner")
+stopSpectateCorner.CornerRadius = UDim.new(0, 6)
+stopSpectateCorner.Parent = stopSpectateBtn
+
+spectateList = Instance.new("ScrollingFrame")
 local stopSpectateCorner = Instance.new("UICorner")
 stopSpectateCorner.CornerRadius = UDim.new(0, 6)
 stopSpectateCorner.Parent = stopSpectateBtn
@@ -992,6 +1007,11 @@ spectateList.CanvasSize = UDim2.new(0, 0, 0, 0)
 spectateList.ScrollBarThickness = 4
 spectateList.Parent = spectatePanel
 
+spectateListCorner = Instance.new("UICorner")
+spectateListCorner.CornerRadius = UDim.new(0, 8)
+spectateListCorner.Parent = spectateList
+
+spectateListStroke = Instance.new("UIStroke")
 local spectateListCorner = Instance.new("UICorner")
 spectateListCorner.CornerRadius = UDim.new(0, 8)
 spectateListCorner.Parent = spectateList
@@ -1002,11 +1022,13 @@ spectateListStroke.Color = COL_BORDER
 spectateListStroke.Transparency = 0.1
 spectateListStroke.Parent = spectateList
 
+spectateListLayout = Instance.new("UIListLayout")
 local spectateListLayout = Instance.new("UIListLayout")
 spectateListLayout.Padding = UDim.new(0, 4)
 spectateListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 spectateListLayout.Parent = spectateList
 
+function stopSpectating()
 local function stopSpectating()
     spectatingPlayer = nil
     local char = LocalPlayer.Character
@@ -1019,6 +1041,7 @@ local function stopSpectating()
     spectateStatus.Text = "Not spectating"
 end
 
+function spectatePlayer(player)
 local function spectatePlayer(player)
     if not player or player == LocalPlayer then return end
     local character = player.Character
@@ -1038,6 +1061,7 @@ local function spectatePlayer(player)
     spectateStatus.Text = "Spectating: " .. getPlayerDisplayName(player)
 end
 
+function rebuildSpectateList()
 local function rebuildSpectateList()
     for _, child in ipairs(spectateList:GetChildren()) do
         if child:IsA("TextButton") then
@@ -1084,6 +1108,15 @@ end
 stopSpectateBtn.MouseButton1Click:Connect(stopSpectating)
 rebuildSpectateList()
 
+savedConfigs = {}
+selectedConfigName = nil
+
+CONFIGS_FILE = "IshKeb_Configs.json"
+function colorToTable(c)
+    return {r = c.R, g = c.G, b = c.B}
+end
+
+function tableToColor(t, fallback)
 local savedConfigs = {}
 local selectedConfigName = nil
 
@@ -1098,6 +1131,7 @@ local function tableToColor(t, fallback)
     return Color3.new(math.clamp(t.r, 0, 1), math.clamp(t.g, 0, 1), math.clamp(t.b, 0, 1))
 end
 
+function serializeConfig(config)
 local function serializeConfig(config)
     return {
         aimbotEnabled = config.aimbotEnabled,
@@ -1118,6 +1152,7 @@ local function serializeConfig(config)
     }
 end
 
+function deserializeConfig(config)
 local function deserializeConfig(config)
     if type(config) ~= "table" then return nil end
     local bindType = config.aimBindType == "KeyCode" and "KeyCode" or "UserInputType"
@@ -1146,6 +1181,7 @@ local function deserializeConfig(config)
     }
 end
 
+function saveConfigsToDisk()
 local function saveConfigsToDisk()
     if not writefile then return end
     local serializable = {}
@@ -1158,6 +1194,7 @@ local function saveConfigsToDisk()
     end
 end
 
+function loadConfigsFromDisk()
 local function loadConfigsFromDisk()
     if not readfile or not isfile or not isfile(CONFIGS_FILE) then return end
     local okRead, contents = pcall(readfile, CONFIGS_FILE)
@@ -1174,6 +1211,7 @@ end
 
 makeLabel(configsPanel, "Configs", 1)
 
+configNameFrame = Instance.new("Frame")
 local configNameFrame = Instance.new("Frame")
 configNameFrame.Size = UDim2.new(1, 0, 0, 40)
 configNameFrame.BackgroundColor3 = COL_PANEL_ALT
@@ -1181,6 +1219,11 @@ configNameFrame.BorderSizePixel = 0
 configNameFrame.LayoutOrder = 2
 configNameFrame.Parent = configsPanel
 
+configNameFrameCorner = Instance.new("UICorner")
+configNameFrameCorner.CornerRadius = UDim.new(0, 8)
+configNameFrameCorner.Parent = configNameFrame
+
+configNameFrameStroke = Instance.new("UIStroke")
 local configNameFrameCorner = Instance.new("UICorner")
 configNameFrameCorner.CornerRadius = UDim.new(0, 8)
 configNameFrameCorner.Parent = configNameFrame
@@ -1191,6 +1234,7 @@ configNameFrameStroke.Color = COL_BORDER
 configNameFrameStroke.Transparency = 0.1
 configNameFrameStroke.Parent = configNameFrame
 
+configNameBox = Instance.new("TextBox")
 local configNameBox = Instance.new("TextBox")
 configNameBox.Size = UDim2.new(1, -8, 1, -8)
 configNameBox.Position = UDim2.new(0, 4, 0, 4)
@@ -1205,6 +1249,11 @@ configNameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 configNameBox.PlaceholderColor3 = COL_DIM
 configNameBox.Parent = configNameFrame
 
+configNameCorner = Instance.new("UICorner")
+configNameCorner.CornerRadius = UDim.new(0, 6)
+configNameCorner.Parent = configNameBox
+
+configDropdownFrame = Instance.new("Frame")
 local configNameCorner = Instance.new("UICorner")
 configNameCorner.CornerRadius = UDim.new(0, 6)
 configNameCorner.Parent = configNameBox
@@ -1216,6 +1265,11 @@ configDropdownFrame.BorderSizePixel = 0
 configDropdownFrame.LayoutOrder = 3
 configDropdownFrame.Parent = configsPanel
 
+configDropdownFrameCorner = Instance.new("UICorner")
+configDropdownFrameCorner.CornerRadius = UDim.new(0, 8)
+configDropdownFrameCorner.Parent = configDropdownFrame
+
+configDropdownFrameStroke = Instance.new("UIStroke")
 local configDropdownFrameCorner = Instance.new("UICorner")
 configDropdownFrameCorner.CornerRadius = UDim.new(0, 8)
 configDropdownFrameCorner.Parent = configDropdownFrame
@@ -1226,6 +1280,7 @@ configDropdownFrameStroke.Color = COL_BORDER
 configDropdownFrameStroke.Transparency = 0.1
 configDropdownFrameStroke.Parent = configDropdownFrame
 
+configDropdown = Instance.new("Frame")
 local configDropdown = Instance.new("Frame")
 configDropdown.Size = UDim2.new(1, -8, 1, -8)
 configDropdown.Position = UDim2.new(0, 4, 0, 4)
@@ -1233,6 +1288,11 @@ configDropdown.BackgroundColor3 = COL_PANEL
 configDropdown.BorderSizePixel = 0
 configDropdown.Parent = configDropdownFrame
 
+configDropdownCorner = Instance.new("UICorner")
+configDropdownCorner.CornerRadius = UDim.new(0, 6)
+configDropdownCorner.Parent = configDropdown
+
+configDropdownButton = Instance.new("TextButton")
 local configDropdownCorner = Instance.new("UICorner")
 configDropdownCorner.CornerRadius = UDim.new(0, 6)
 configDropdownCorner.Parent = configDropdown
@@ -1248,6 +1308,7 @@ configDropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 configDropdownButton.TextXAlignment = Enum.TextXAlignment.Left
 configDropdownButton.Parent = configDropdown
 
+configDropdownArrow = Instance.new("ImageLabel")
 local configDropdownArrow = Instance.new("ImageLabel")
 configDropdownArrow.Size = UDim2.new(0, 18, 0, 18)
 configDropdownArrow.AnchorPoint = Vector2.new(1, 0.5)
@@ -1257,6 +1318,7 @@ configDropdownArrow.Image = "rbxassetid://124463564041369"
 configDropdownArrow.ImageColor3 = Color3.fromRGB(255, 255, 255)
 configDropdownArrow.Parent = configDropdown
 
+configListFrame = Instance.new("Frame")
 local configListFrame = Instance.new("Frame")
 configListFrame.Size = UDim2.new(1, 0, 0, 0)
 configListFrame.BackgroundColor3 = COL_PANEL_ALT
@@ -1265,6 +1327,11 @@ configListFrame.LayoutOrder = 4
 configListFrame.Visible = false
 configListFrame.Parent = configsPanel
 
+configListCorner = Instance.new("UICorner")
+configListCorner.CornerRadius = UDim.new(0, 6)
+configListCorner.Parent = configListFrame
+
+configListLayout = Instance.new("UIListLayout")
 local configListCorner = Instance.new("UICorner")
 configListCorner.CornerRadius = UDim.new(0, 6)
 configListCorner.Parent = configListFrame
@@ -1274,6 +1341,7 @@ configListLayout.Padding = UDim.new(0, 4)
 configListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 configListLayout.Parent = configListFrame
 
+saveConfigFrame = Instance.new("Frame")
 local saveConfigFrame = Instance.new("Frame")
 saveConfigFrame.Size = UDim2.new(1, 0, 0, 40)
 saveConfigFrame.BackgroundColor3 = COL_PANEL_ALT
@@ -1281,6 +1349,11 @@ saveConfigFrame.BorderSizePixel = 0
 saveConfigFrame.LayoutOrder = 5
 saveConfigFrame.Parent = configsPanel
 
+saveConfigFrameCorner = Instance.new("UICorner")
+saveConfigFrameCorner.CornerRadius = UDim.new(0, 8)
+saveConfigFrameCorner.Parent = saveConfigFrame
+
+saveConfigFrameStroke = Instance.new("UIStroke")
 local saveConfigFrameCorner = Instance.new("UICorner")
 saveConfigFrameCorner.CornerRadius = UDim.new(0, 8)
 saveConfigFrameCorner.Parent = saveConfigFrame
@@ -1291,6 +1364,7 @@ saveConfigFrameStroke.Color = COL_BORDER
 saveConfigFrameStroke.Transparency = 0.1
 saveConfigFrameStroke.Parent = saveConfigFrame
 
+saveConfigBtn = Instance.new("TextButton")
 local saveConfigBtn = Instance.new("TextButton")
 saveConfigBtn.Size = UDim2.new(1, -8, 1, -8)
 saveConfigBtn.Position = UDim2.new(0, 4, 0, 4)
@@ -1302,6 +1376,11 @@ saveConfigBtn.TextSize = 12
 saveConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 saveConfigBtn.Parent = saveConfigFrame
 
+saveConfigCorner = Instance.new("UICorner")
+saveConfigCorner.CornerRadius = UDim.new(0, 6)
+saveConfigCorner.Parent = saveConfigBtn
+
+loadConfigFrame = Instance.new("Frame")
 local saveConfigCorner = Instance.new("UICorner")
 saveConfigCorner.CornerRadius = UDim.new(0, 6)
 saveConfigCorner.Parent = saveConfigBtn
@@ -1313,6 +1392,11 @@ loadConfigFrame.BorderSizePixel = 0
 loadConfigFrame.LayoutOrder = 6
 loadConfigFrame.Parent = configsPanel
 
+loadConfigFrameCorner = Instance.new("UICorner")
+loadConfigFrameCorner.CornerRadius = UDim.new(0, 8)
+loadConfigFrameCorner.Parent = loadConfigFrame
+
+loadConfigFrameStroke = Instance.new("UIStroke")
 local loadConfigFrameCorner = Instance.new("UICorner")
 loadConfigFrameCorner.CornerRadius = UDim.new(0, 8)
 loadConfigFrameCorner.Parent = loadConfigFrame
@@ -1323,6 +1407,7 @@ loadConfigFrameStroke.Color = COL_BORDER
 loadConfigFrameStroke.Transparency = 0.1
 loadConfigFrameStroke.Parent = loadConfigFrame
 
+loadConfigBtn = Instance.new("TextButton")
 local loadConfigBtn = Instance.new("TextButton")
 loadConfigBtn.Size = UDim2.new(1, -8, 1, -8)
 loadConfigBtn.Position = UDim2.new(0, 4, 0, 4)
@@ -1334,6 +1419,11 @@ loadConfigBtn.TextSize = 12
 loadConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 loadConfigBtn.Parent = loadConfigFrame
 
+loadConfigCorner = Instance.new("UICorner")
+loadConfigCorner.CornerRadius = UDim.new(0, 6)
+loadConfigCorner.Parent = loadConfigBtn
+
+deleteLastConfigFrame = Instance.new("Frame")
 local loadConfigCorner = Instance.new("UICorner")
 loadConfigCorner.CornerRadius = UDim.new(0, 6)
 loadConfigCorner.Parent = loadConfigBtn
@@ -1345,6 +1435,11 @@ deleteLastConfigFrame.BorderSizePixel = 0
 deleteLastConfigFrame.LayoutOrder = 7
 deleteLastConfigFrame.Parent = configsPanel
 
+deleteLastConfigFrameCorner = Instance.new("UICorner")
+deleteLastConfigFrameCorner.CornerRadius = UDim.new(0, 8)
+deleteLastConfigFrameCorner.Parent = deleteLastConfigFrame
+
+deleteLastConfigFrameStroke = Instance.new("UIStroke")
 local deleteLastConfigFrameCorner = Instance.new("UICorner")
 deleteLastConfigFrameCorner.CornerRadius = UDim.new(0, 8)
 deleteLastConfigFrameCorner.Parent = deleteLastConfigFrame
@@ -1355,6 +1450,7 @@ deleteLastConfigFrameStroke.Color = COL_BORDER
 deleteLastConfigFrameStroke.Transparency = 0.1
 deleteLastConfigFrameStroke.Parent = deleteLastConfigFrame
 
+deleteLastConfigBtn = Instance.new("TextButton")
 local deleteLastConfigBtn = Instance.new("TextButton")
 deleteLastConfigBtn.Size = UDim2.new(1, -8, 1, -8)
 deleteLastConfigBtn.Position = UDim2.new(0, 4, 0, 4)
@@ -1366,6 +1462,11 @@ deleteLastConfigBtn.TextSize = 12
 deleteLastConfigBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 deleteLastConfigBtn.Parent = deleteLastConfigFrame
 
+deleteLastConfigCorner = Instance.new("UICorner")
+deleteLastConfigCorner.CornerRadius = UDim.new(0, 6)
+deleteLastConfigCorner.Parent = deleteLastConfigBtn
+
+deleteAllConfigsFrame = Instance.new("Frame")
 local deleteLastConfigCorner = Instance.new("UICorner")
 deleteLastConfigCorner.CornerRadius = UDim.new(0, 6)
 deleteLastConfigCorner.Parent = deleteLastConfigBtn
@@ -1377,6 +1478,11 @@ deleteAllConfigsFrame.BorderSizePixel = 0
 deleteAllConfigsFrame.LayoutOrder = 8
 deleteAllConfigsFrame.Parent = configsPanel
 
+deleteAllConfigsFrameCorner = Instance.new("UICorner")
+deleteAllConfigsFrameCorner.CornerRadius = UDim.new(0, 8)
+deleteAllConfigsFrameCorner.Parent = deleteAllConfigsFrame
+
+deleteAllConfigsFrameStroke = Instance.new("UIStroke")
 local deleteAllConfigsFrameCorner = Instance.new("UICorner")
 deleteAllConfigsFrameCorner.CornerRadius = UDim.new(0, 8)
 deleteAllConfigsFrameCorner.Parent = deleteAllConfigsFrame
@@ -1387,6 +1493,7 @@ deleteAllConfigsFrameStroke.Color = COL_BORDER
 deleteAllConfigsFrameStroke.Transparency = 0.1
 deleteAllConfigsFrameStroke.Parent = deleteAllConfigsFrame
 
+deleteAllConfigsBtn = Instance.new("TextButton")
 local deleteAllConfigsBtn = Instance.new("TextButton")
 deleteAllConfigsBtn.Size = UDim2.new(1, -8, 1, -8)
 deleteAllConfigsBtn.Position = UDim2.new(0, 4, 0, 4)
@@ -1398,6 +1505,11 @@ deleteAllConfigsBtn.TextSize = 12
 deleteAllConfigsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 deleteAllConfigsBtn.Parent = deleteAllConfigsFrame
 
+deleteAllConfigsCorner = Instance.new("UICorner")
+deleteAllConfigsCorner.CornerRadius = UDim.new(0, 6)
+deleteAllConfigsCorner.Parent = deleteAllConfigsBtn
+
+function getConfigSnapshot()
 local deleteAllConfigsCorner = Instance.new("UICorner")
 deleteAllConfigsCorner.CornerRadius = UDim.new(0, 6)
 deleteAllConfigsCorner.Parent = deleteAllConfigsBtn
@@ -1422,6 +1534,7 @@ local function getConfigSnapshot()
     }
 end
 
+function applyConfig(config)
 local function applyConfig(config)
     if not config then return end
     aimbotToggle.setState(config.aimbotEnabled, true)
@@ -1450,6 +1563,7 @@ local function applyConfig(config)
     end
 end
 
+function getSortedConfigNames()
 local function getSortedConfigNames()
     local names = {}
     for name, _ in pairs(savedConfigs) do
@@ -1459,6 +1573,7 @@ local function getSortedConfigNames()
     return names
 end
 
+function rebuildConfigList()
 local function rebuildConfigList()
     for _, child in ipairs(configListFrame:GetChildren()) do
         if child:IsA("TextButton") then
