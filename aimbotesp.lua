@@ -47,13 +47,34 @@ local function getCurrentCamera()
     return workspace.CurrentCamera
 end
 
+local function resolveGuiParent()
+    local coreGui = game:GetService("CoreGui")
+    local gethuiFn = rawget(_G, "gethui")
+    if type(gethuiFn) == "function" then
+        local ok, result = pcall(gethuiFn)
+        if ok and typeof(result) == "Instance" then
+            return result
+        end
+    end
+    return coreGui
+end
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name            = "AimbotESPMenu"
 ScreenGui.ResetOnSpawn    = false
 ScreenGui.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
 ScreenGui.IgnoreGuiInset = true
-local guiParent = (rawget(_G, "gethui") and gethui()) or game:GetService("CoreGui")
-ScreenGui.Parent          = guiParent
+
+local guiParent = resolveGuiParent()
+local parentOk = pcall(function()
+    ScreenGui.Parent = guiParent
+end)
+if not parentOk then
+    local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    if playerGui then
+        ScreenGui.Parent = playerGui
+    end
+end
 
 local COL_BG          = Color3.fromRGB(7,   8,   12)
 local COL_PANEL       = Color3.fromRGB(14,  16,  22)
